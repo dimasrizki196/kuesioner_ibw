@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #111827; /* Gray-900 untuk teks lebih tajam */
+  --background: #02040a; /* Default hitam space */
+  --foreground: #ffffff;
+  --font-tnr: "Times New Roman", Times, serif;
 }
 
 @theme inline {
@@ -10,29 +11,69 @@
   --color-foreground: var(--foreground);
 }
 
-/* Force Light Mode agar dashboard admin tetap bersih, 
-   tapi kamu bisa hapus media query dark mode jika ingin mendukungnya */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-tnr);
   transition: background-color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  margin: 0;
 }
 
-/* Custom class untuk tema Kuesioner (Bisa kamu pakai nanti di Step 4) */
-.theme-conspiracy {
-  --background: #1a0505;
-  --foreground: #fee2e2;
+/* --- TEMA GLOBAL NEBULA --- */
+.nebula-theme {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
 }
 
-.theme-umum {
-  --background: #f0f9ff;
-  --foreground: #0c4a6e;
+/* Background Nebula Global */
+.nebula-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: url("/images/nebula-bg.jpg"); /* Pastikan file ada di public/images/ */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Overlay Gelap agar Teks TNR Tajam */
+.nebula-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+/* Glassmorphism Card Style */
+.glass-card {
+  background: rgba(12, 12, 12, 0.65);
+  backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border-radius: 45px;
+}
+
+/* Custom Scrollbar untuk Tema Gelap */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+
+/* Input & Button Global Force TNR */
+input,
+button,
+textarea,
+select {
+  font-family: var(--font-tnr) !important;
 }

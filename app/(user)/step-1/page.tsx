@@ -8,6 +8,14 @@ export default function Step1InformedConsent() {
 
   const handleNext = () => {
     if (agreed === true) {
+      // 1. Bersihkan session lama (jaga-jaga kalau dia mengulang kuesioner)
+      localStorage.clear();
+
+      // 2. Catat Waktu Mulai (dalam milliseconds)
+      const startTime = Date.now();
+      localStorage.setItem("start_time", startTime.toString());
+
+      // 3. Lanjut ke Step 2
       router.push("/step-2");
     } else {
       alert("Mohon maaf, Anda harus memberikan persetujuan untuk melanjutkan.");
@@ -15,153 +23,175 @@ export default function Step1InformedConsent() {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-100 flex items-center justify-center p-3 md:p-4">
-      <div className="w-full max-w-lg md:max-w-5xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row h-full max-h-[92vh] md:max-h-[700px]">
-        {/* --- SIDEBAR INFO --- */}
-        <div className="w-full md:w-[32%] bg-[#0f172a] p-6 md:p-10 text-white flex flex-col justify-between shrink-0">
-          <div>
-            {/* Tombol Kembali (Mobile) */}
-            <button
-              onClick={() => router.back()}
-              className="md:hidden mb-6 flex items-center gap-2 text-[10px] font-bold text-slate-400 tracking-widest hover:text-white transition-colors"
-            >
-              ← Kembali
-            </button>
+    <div className="relative min-h-screen w-full flex items-center justify-center p-3 md:p-6 overflow-x-hidden font-serif selection:bg-blue-500/20">
+      {/* BACKGROUND DEEP SPACE */}
+      <div className="fixed inset-0 z-0 bg-[#000105]">
+        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-10"></div>
+        <div className="absolute -top-1/4 -right-1/4 w-[60vh] h-[60vh] bg-sky-950 rounded-full blur-[120px] opacity-25"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 w-[60vh] h-[60vh] bg-indigo-950 rounded-full blur-[120px] opacity-25"></div>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
+      </div>
 
-            <div className="inline-block w-fit px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-[0.3em] mb-4">
-              Step 01/05
+      {/* CONTAINER UTAMA */}
+      <div className="relative z-10 w-full max-w-lg md:max-w-5xl my-auto animate-in fade-in zoom-in-95 duration-1000">
+        {/* KARTU DARK GLASS */}
+        <div className="bg-slate-950/40 backdrop-blur-3xl border border-slate-800 rounded-[40px] shadow-[0_0_60px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col md:flex-row h-full md:max-h-[750px]">
+          {/* --- SIDEBAR --- */}
+          <div className="w-full md:w-[35%] bg-[#080c1d]/80 p-8 md:p-12 text-slate-100 flex flex-col justify-between shrink-0 border-b md:border-b-0 md:border-r border-slate-700">
+            <div className="space-y-1">
+              <div className="inline-block px-3 py-1 rounded-full bg-blue-950/30 border border-blue-800 text-blue-400 text-[10px] font-black uppercase tracking-[0.4em] mb-6 font-serif">
+                Step 01/05
+              </div>
+              <h1 className="text-3xl md:text-5xl font-black leading-[0.9] tracking-tighter mb-4 italic drop-shadow-lg text-white font-serif">
+                INFORMED <br />
+                CONSENT
+              </h1>
+              <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed font-serif">
+                Fakultas Psikologi <br />
+                UMS
+              </p>
             </div>
-            <h1 className="text-2xl md:text-4xl font-black leading-tight mb-2">
-              Informed <br className="hidden md:block" /> Consent
-            </h1>
-            <p className="text-slate-400 text-[10px] md:text-xs leading-relaxed opacity-80 uppercase tracking-widest font-bold">
-              Fakultas Psikologi UMS
-            </p>
+
+            <div className="mt-10 space-y-4 pt-8 border-t border-slate-700 font-serif">
+              <div className="space-y-1">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest font-serif">
+                  Narahubung / Email
+                </p>
+                <p className="text-[11px] font-bold text-blue-400 break-all font-serif">
+                  f100220218@student.ums.ac.id
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest font-serif">
+                  WhatsApp Support
+                </p>
+                <p className="text-[11px] font-bold text-blue-400 font-serif">
+                  0812-9556-8720
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Tombol Kembali (Desktop) */}
-          <button
-            onClick={() => router.back()}
-            className="hidden md:flex items-center gap-2 text-[10px] font-bold text-slate-500 tracking-widest hover:text-white transition-colors"
-          >
-            <span className="text-lg">←</span> Kembali ke Beranda
-          </button>
-        </div>
-
-        {/* --- TEXT CONTENT --- */}
-        <div className="flex-1 flex flex-col min-h-0 bg-white">
-          <div className="flex-1 p-5 md:p-10 flex flex-col justify-between overflow-hidden">
-            <div className="space-y-3 md:space-y-4 text-slate-700 text-[11px] md:text-[13px] leading-[1.5]">
-              <p className="font-bold text-slate-900 font-serif italic">
-                Assalamu’alaikum Warahmatullahi Wabarakatuh,
-              </p>
-
-              <p>
-                Perkenalkan, saya <strong>Iqbal Bhayu Wicaksono</strong>,
-                mahasiswa Fakultas Psikologi Universitas Muhammadiyah Surakarta
-                yang saat ini sedang menyusun penelitian tugas akhir di bawah
-                bimbingan{" "}
-                <strong>Bapak Audi Ahmad Rikardi, S. Psi., M.A.</strong> untuk
-                memenuhi salah satu syarat memperoleh gelar Sarjana Psikologi.
-                Saya mengundang Saudara/i untuk berpartisipasi dengan mengisi
-                kuesioner penelitian. Waktu pengisian kurang lebih 10–15 menit.
-              </p>
-
-              {/* Kriteria Responden */}
-              <div className="bg-slate-50 p-4 rounded-[24px] border border-slate-100 space-y-2">
-                <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">
-                  Adapun kriteria responden yang dibutuhkan:
+          {/* --- CONTENT AREA --- */}
+          <div className="flex-1 flex flex-col min-h-0 bg-transparent font-serif">
+            <div className="flex-1 overflow-y-auto p-6 md:p-12 space-y-6 custom-scrollbar text-slate-300 font-serif leading-relaxed">
+              <div className="space-y-4 leading-relaxed font-serif">
+                <p className="font-bold text-white italic text-sm md:text-base font-serif">
+                  Assalamu’alaikum Warahmatullahi Wabarakatuh,
                 </p>
-                <div className="space-y-1 font-medium text-slate-800">
-                  <div className="flex items-start gap-2">
-                    <span className="shrink-0 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-bold mt-0.5">
-                      1
-                    </span>
-                    <p>
-                      Berusia minimal 18 tahun dan maksimal 25 tahun pada saat
-                      pengisian kuesioner.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="shrink-0 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-bold mt-0.5">
-                      2
-                    </span>
-                    <p>Mampu membaca dan memahami Bahasa Indonesia.</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="shrink-0 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-bold mt-0.5">
-                      3
-                    </span>
-                    <p>WNI yang berdomisili di Indonesia.</p>
-                  </div>
+
+                <p className="text-xs md:text-sm opacity-95 font-serif">
+                  Perkenalkan, saya <strong>Iqbal Bhayu Wicaksono</strong>,
+                  mahasiswa Fakultas Psikologi Universitas Muhammadiyah
+                  Surakarta. Saya mengundang Saudara/i untuk berpartisipasi
+                  dalam penelitian tugas akhir saya di bawah bimbingan{" "}
+                  <strong>Bapak Audi Ahmad Rikardi, S. Psi., M.A.</strong>
+                </p>
+
+                <div className="p-5 bg-blue-950/20 border border-blue-900 rounded-2xl font-serif">
+                  <p className="text-[10px] md:text-[11px] font-bold text-blue-300 leading-relaxed italic tracking-wide font-serif">
+                    "Penelitian ini sudah memenuhi Kelayakan Etik No.
+                    6310/B.1/KEPK-FKUMS/IV/2026"
+                  </p>
                 </div>
-              </div>
 
-              <p className="text-[10px] md:text-[11px] leading-relaxed">
-                Seluruh identitas dan informasi yang Saudara/i berikan akan
-                dijaga kerahasiaannya dan hanya digunakan untuk keperluan
-                penelitian. Saudara/i terlibat dalam penelitian ini secara
-                sukarela dan memiliki hak untuk tidak berpartisipasi serta
-                berhak mengundurkan diri di tengah proses penelitian. Besar
-                harapan saya Saudara/i berkenan meluangkan waktu untuk
-                berpartisipasi. Terima kasih atas perhatian dan kesediaannya.
-                Semoga Allah SWT senantiasa memberikan kesehatan, kemudahan, dan
-                keberkahan dalam setiap langkah kita.
-              </p>
+                <div className="bg-slate-800/30 p-8 rounded-[40px] border border-slate-700 space-y-4 font-serif">
+                  <p className="text-[11px] font-black text-blue-400 uppercase tracking-[0.3em] font-serif">
+                    Kriteria Responden:
+                  </p>
+                  <ul className="space-y-4 text-xs md:text-sm font-serif">
+                    <li className="flex gap-4 items-start font-serif">
+                      <span className="text-blue-500 font-black font-serif">
+                        01.
+                      </span>{" "}
+                      Berusia 18 - 25 tahun saat pengisian kuesioner.
+                    </li>
+                    <li className="flex gap-4 items-start font-serif">
+                      <span className="text-blue-500 font-black font-serif">
+                        02.
+                      </span>{" "}
+                      Mampu memahami Bahasa Indonesia dengan baik.
+                    </li>
+                    <li className="flex gap-4 items-start font-serif">
+                      <span className="text-blue-500 font-black font-serif">
+                        03.
+                      </span>{" "}
+                      WNI yang berdomisili di Indonesia.
+                    </li>
+                  </ul>
+                </div>
 
-              {/* Narahubung */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 pt-2 border-t border-slate-100">
-                <p className="text-[9px] text-slate-500 flex items-center gap-1">
-                  📧 f100220218@student.ums.ac.id
+                <p className="text-[11px] opacity-50 italic pt-4 font-serif">
+                  Partisipasi dalam penelitian ini bersifat sukarela, sehingga
+                  keterlibatan Anda merupakan keputusan pribadi tanpa adanya
+                  paksaan dari pihak manapun. Seluruh data dan informasi yang
+                  Anda berikan akan dijaga kerahasiaannya dan hanya digunakan
+                  untuk kepentingan penelitian. Hasil Penelitian ini akan
+                  dipublikasikan untuk kepentingan akademik tanpa mencantumkan
+                  identitas pribadi responden, sehingga privasi Anda tetap
+                  terjamin.
                 </p>
-                <a
-                  href="https://wa.me/6281295568720"
-                  className="text-[9px] text-blue-600 font-bold flex items-center gap-1 underline underline-offset-2"
-                >
-                  💬 WA: 081295568720
-                </a>
               </div>
             </div>
 
-            {/* Area Konfirmasi */}
-            <div className="pt-4 space-y-3 shrink-0">
-              <p className="text-[11px] font-black text-slate-900 text-center uppercase tracking-wider">
+            {/* --- FOOTER --- */}
+            <div className="p-8 md:p-12 bg-black/60 border-t border-slate-800 shrink-0 space-y-6 font-serif">
+              <p className="text-[10px] font-black text-slate-500 text-center uppercase tracking-[0.3em] font-serif">
                 Apakah Anda bersedia berpartisipasi?
               </p>
-              <div className="flex gap-2">
+
+              <div className="flex gap-3 font-serif">
                 <button
                   onClick={() => setAgreed(true)}
-                  className={`flex-1 py-4 rounded-2xl font-bold text-[11px] transition-all border-2 ${
+                  className={`flex-1 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border-2 font-serif ${
                     agreed === true
-                      ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100"
-                      : "bg-white border-slate-100 text-slate-400 hover:border-blue-200"
+                      ? "bg-blue-600 border-blue-600 text-white shadow-[0_0_30px_rgba(37,99,235,0.3)]"
+                      : "bg-white/5 border-slate-700 text-slate-500 hover:border-blue-500 hover:text-white"
                   }`}
                 >
                   Ya, Bersedia
                 </button>
                 <button
                   onClick={() => setAgreed(false)}
-                  className={`flex-1 py-4 rounded-2xl font-bold text-[11px] transition-all border-2 ${
+                  className={`flex-1 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border-2 font-serif ${
                     agreed === false
-                      ? "bg-slate-800 border-slate-800 text-white"
-                      : "bg-white border-slate-100 text-slate-400 hover:border-red-200"
+                      ? "bg-slate-200 border-slate-200 text-black hover:border-slate-300"
+                      : "bg-white/5 border-slate-700 text-slate-500 hover:border-red-500 hover:text-white"
                   }`}
                 >
-                  Tidak Bersedia
+                  Tidak
                 </button>
               </div>
 
               <button
                 onClick={handleNext}
                 disabled={agreed !== true}
-                className="w-full py-5 bg-[#0f172a] text-white rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] shadow-xl disabled:opacity-10 transition-all active:scale-[0.98]"
+                className="group relative w-full py-6 bg-white text-black rounded-[28px] font-black uppercase tracking-[0.4em] text-[11px] shadow-2xl disabled:opacity-20 transition-all active:scale-95 overflow-hidden font-serif"
               >
-                Lanjutkan
+                <span className="relative z-10 italic font-serif">
+                  Lanjutkan Pengisian
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes shimmer {
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+        }
+      `}</style>
     </div>
   );
 }

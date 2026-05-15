@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-export default function Step5Evaluasi() {
+export default function Step5KuesionerSkala() {
   const router = useRouter();
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -11,167 +11,224 @@ export default function Step5Evaluasi() {
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
-    const respondentId = localStorage.getItem("respondent_id");
-    if (!respondentId) {
+    // Memastikan user tidak melompati step sebelumnya
+    const respondentData = localStorage.getItem("respondent_data");
+    const answersStep4 = localStorage.getItem("answers_data");
+
+    if (!respondentData || !answersStep4) {
       router.push("/step-1");
       return;
     }
-    fetchFinalQuestions();
+
+    fetchScaleQuestions();
   }, []);
 
-  async function fetchFinalQuestions() {
+  async function fetchScaleQuestions() {
     setLoading(true);
-    // Mengambil soal yang 'type' nya NULL (Soal evaluasi/umum akhir)
-    const { data, error } = await supabase
-      .from("questions")
-      .select("*")
-      .is("type", null)
-      .order("created_at", { ascending: true });
+    try {
+      // Menarik KHUSUS soal yang type-nya "skala"
+      const { data, error } = await supabase
+        .from("questions")
+        .select("*")
+        .eq("type", "skala")
+        .order("created_at", { ascending: true });
 
-    if (data) setQuestions(data);
-    setLoading(false);
+      if (error) throw error;
+      if (data) setQuestions(data);
+    } catch (err) {
+      console.error("Error fetching scale questions:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleSelectAnswer = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const handleSubmit = async () => {
-    const respondentId = localStorage.getItem("respondent_id");
+  const handleSubmit = () => {
+    // Validasi apakah semua soal skala sudah dijawab
+    const unanswered = questions.filter((q) => !answers[q.id]);
 
-    if (Object.keys(answers).length < questions.length) {
-      alert("Mohon isi evaluasi singkat ini sebelum selesai.");
+    if (unanswered.length > 0) {
+      alert(
+        `Mohon lengkapi semua jawaban. Ada ${unanswered.length} pernyataan yang terlewat.`,
+      );
       return;
     }
 
     setSubmitting(true);
+
+    // SIMPAN KE LOCALSTORAGE (Sistem Session)
     try {
-      const payload = questions.map((q) => ({
-        respondent_id: respondentId,
-        question_id: q.id,
-        answer_value: answers[q.id],
-      }));
+      localStorage.setItem("answers_skala", JSON.stringify(answers));
 
-      const { error } = await supabase.from("answers").insert(payload);
-      if (error) throw error;
-
-      // Selesai total, hapus semua jejak di localStorage
-      localStorage.clear();
-      router.push("/finish");
-    } catch (error: any) {
-      alert("Gagal: " + error.message);
-    } finally {
+      // Meluncur ke Step Terakhir (Step 6 - Submit Final)
+      router.push("/step-6");
+    } catch (error) {
+      console.error("Gagal menyimpan ke session:", error);
+      alert("Terjadi kesalahan saat menyimpan jawaban skala.");
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-100 flex items-center justify-center p-3 md:p-4">
-      <div className="w-full max-w-lg md:max-w-5xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row h-full max-h-[92vh] md:max-h-[700px]">
-        {/* --- SIDEBAR --- */}
-        <div className="w-full md:w-[32%] bg-[#0f172a] p-6 md:p-10 text-white flex flex-col justify-between shrink-0">
-          <div>
-            <div className="inline-block w-fit px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-[0.3em] mb-4">
-              Step 05/05
-            </div>
-            <h1 className="text-2xl md:text-4xl font-black leading-tight mb-2">
-              Tahap Akhir
-            </h1>
-            <p className="text-slate-400 text-[10px] md:text-xs leading-relaxed opacity-80 uppercase tracking-widest font-bold">
-              Evaluasi Pengisian
-            </p>
-          </div>
-          <div className="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-900/20">
-            <p className="text-[10px] font-bold text-blue-100 uppercase mb-1">
-              Status
-            </p>
-            <p className="text-xs font-black">Sedikit lagi selesai!</p>
-          </div>
-        </div>
+    <div className="relative min-h-screen w-full flex items-center justify-center p-4 md:p-8 overflow-x-hidden font-serif selection:bg-blue-500/20">
+      {/* BACKGROUND DEEP SPACE */}
+      <div className="fixed inset-0 z-0 bg-[#000105]">
+        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-10"></div>
+        <div className="absolute -top-1/4 -right-1/4 w-[60vh] h-[60vh] bg-sky-900 rounded-full blur-[120px] opacity-20"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 w-[60vh] h-[60vh] bg-indigo-950 rounded-full blur-[120px] opacity-20"></div>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
+      </div>
 
-        {/* --- CONTENT --- */}
-        <div className="flex-1 flex flex-col min-h-0 bg-white p-6 md:p-12 justify-between">
-          <div className="flex-1 overflow-y-auto space-y-10 pr-2 custom-scrollbar">
-            <div className="space-y-2">
-              <h2 className="text-xl font-black text-slate-900">
-                Evaluasi & Penutup
-              </h2>
-              <p className="text-sm text-slate-500">
-                Bagaimana pendapat Anda mengenai kuesioner ini?
+      <div className="relative z-10 w-full max-w-lg md:max-w-7xl my-auto animate-in fade-in slide-in-from-bottom-10 duration-1000">
+        <div className="bg-slate-950/40 backdrop-blur-3xl border border-slate-800 rounded-[40px] md:rounded-[50px] shadow-[0_0_80px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col md:flex-row h-full md:h-[85vh]">
+          {/* --- SIDEBAR PROGRESS --- */}
+          <div className="w-full md:w-[25%] bg-[#080c1d]/90 p-8 md:p-10 text-white flex flex-col justify-between shrink-0 border-b md:border-b-0 md:border-r border-slate-700">
+            <div>
+              <button
+                onClick={() => router.back()}
+                className="mb-8 flex items-center gap-2 text-[9px] font-black uppercase text-blue-400/60 tracking-[0.3em] hover:text-white transition-colors font-serif"
+              >
+                ← Kembali
+              </button>
+              <div className="inline-block px-3 py-1 rounded-full bg-blue-900/30 border border-blue-700 text-blue-400 text-[10px] font-black uppercase tracking-[0.4em] mb-6">
+                Step 05/06
+              </div>
+              <h1 className="text-3xl md:text-4xl font-black leading-[0.9] italic mb-4 tracking-tighter">
+                KUESIONER <br /> UTAMA
+              </h1>
+              <p className="text-slate-500 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em]">
+                Skala Psikologi
               </p>
             </div>
 
-            {loading ? (
-              <p className="italic text-slate-400">Memuat soal evaluasi...</p>
-            ) : questions.length === 0 ? (
-              <div className="p-10 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                <p className="text-sm font-bold text-slate-400">
-                  Tidak ada soal evaluasi. Silakan klik selesai.
+            <div className="mt-8 pt-8 border-t border-slate-800">
+              <div className="p-5 md:p-6 bg-slate-900/50 rounded-[24px] border border-slate-800">
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-3">
+                  Progress Pengerjaan
+                </p>
+                <div className="h-2 w-full bg-slate-800/50 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                    style={{
+                      width: `${questions.length > 0 ? (Object.keys(answers).length / questions.length) * 100 : 0}%`,
+                    }}
+                  ></div>
+                </div>
+                <p className="text-[10px] text-right mt-3 text-blue-400 font-bold italic">
+                  {Object.keys(answers).length} dari {questions.length}{" "}
+                  Pernyataan
                 </p>
               </div>
-            ) : (
-              questions.map((q) => (
-                <div
-                  key={q.id}
-                  className="space-y-6 animate-in fade-in duration-700"
-                >
-                  <p className="text-sm md:text-base font-bold text-slate-800">
-                    {q.question_text}
-                  </p>
-
-                  {/* Render Scale jika tipenya scale */}
-                  {q.answer_type === "scale" && (
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center bg-slate-50 p-2 rounded-3xl">
-                        {[1, 2, 3, 4, 5].map((num) => (
-                          <button
-                            key={num}
-                            onClick={() =>
-                              handleSelectAnswer(q.id, num.toString())
-                            }
-                            className={`w-10 h-10 md:w-14 md:h-14 rounded-2xl font-black transition-all flex items-center justify-center ${
-                              answers[q.id] === num.toString()
-                                ? "bg-blue-600 text-white shadow-xl"
-                                : "bg-white text-slate-300 shadow-sm"
-                            }`}
-                          >
-                            {num}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex justify-between px-2 text-[9px] font-bold text-slate-400 uppercase italic">
-                        <span>{q.options["1"] || "Sangat Buruk"}</span>
-                        <span>{q.options["5"] || "Sangat Baik"}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Render Text jika tipenya text */}
-                  {q.answer_type === "text" && (
-                    <textarea
-                      className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-blue-500 outline-none text-sm font-bold min-h-[100px]"
-                      placeholder="Tuliskan jawaban Anda..."
-                      onChange={(e) => handleSelectAnswer(q.id, e.target.value)}
-                    />
-                  )}
-                </div>
-              ))
-            )}
+            </div>
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={
-              submitting ||
-              (questions.length > 0 &&
-                Object.keys(answers).length < questions.length)
-            }
-            className="w-full py-5 mt-8 bg-[#0f172a] text-white rounded-[24px] font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl active:scale-95 transition-all"
-          >
-            {submitting ? "Memproses..." : "Kirim & Selesai"}
-          </button>
+          {/* --- SOAL AREA --- */}
+          <div className="flex-1 flex flex-col min-h-0 bg-transparent">
+            <div className="flex-1 overflow-y-auto p-8 md:p-14 lg:p-16 space-y-12 md:space-y-16 custom-scrollbar scroll-smooth">
+              {loading ? (
+                <div className="h-full flex items-center justify-center text-slate-500 italic text-sm animate-pulse">
+                  Memuat butir skala psikologi...
+                </div>
+              ) : questions.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4">
+                  <span className="text-4xl">⚠️</span>
+                  <p className="italic text-center text-sm max-w-md">
+                    Tidak ada soal tipe "skala" yang ditemukan di database.
+                  </p>
+                </div>
+              ) : (
+                questions.map((q, index) => (
+                  <div
+                    key={q.id}
+                    className="space-y-6 md:space-y-8 animate-in fade-in duration-700"
+                  >
+                    <div className="flex gap-4 md:gap-6 items-start">
+                      <span className="text-3xl md:text-5xl font-black text-slate-800 italic shrink-0 leading-none">
+                        {(index + 1).toString().padStart(2, "0")}
+                      </span>
+                      <p className="text-sm md:text-lg font-bold text-white leading-relaxed pt-1 md:pt-2">
+                        {q.question_text}
+                      </p>
+                    </div>
+
+                    <div className="pl-10 md:pl-[4.5rem]">
+                      {/* HANYA RENDER JAWABAN SCALE (1-5) */}
+                      {q.answer_type === "scale" && (
+                        <div className="space-y-5 max-w-2xl">
+                          <div className="flex justify-between items-center bg-slate-900/50 p-3 rounded-full border border-slate-800">
+                            {[1, 2, 3, 4, 5].map((num) => (
+                              <button
+                                key={num}
+                                onClick={() =>
+                                  handleSelectAnswer(q.id, num.toString())
+                                }
+                                className={`w-12 h-12 md:w-16 md:h-16 rounded-full font-black transition-all flex items-center justify-center text-sm md:text-xl ${
+                                  answers[q.id] === num.toString()
+                                    ? "bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)] scale-110 border-2 border-white/20"
+                                    : "bg-transparent text-slate-500 hover:text-white hover:bg-white/5"
+                                }`}
+                              >
+                                {num}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex justify-between px-4 text-[9px] font-black text-slate-500 uppercase tracking-widest italic">
+                            <span>Sangat Tidak Setuju</span>
+                            <span>Sangat Setuju</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* --- ACTION BUTTON --- */}
+            <div className="p-8 md:p-10 lg:p-12 bg-black/60 border-t border-slate-800 shrink-0">
+              <button
+                onClick={handleSubmit}
+                disabled={
+                  submitting ||
+                  Object.keys(answers).length < questions.length ||
+                  questions.length === 0
+                }
+                className="group relative w-full py-6 md:py-7 bg-white text-black rounded-[28px] font-black uppercase tracking-[0.4em] text-[11px] md:text-[12px] shadow-2xl disabled:opacity-20 transition-all active:scale-95 overflow-hidden flex items-center justify-center gap-3"
+              >
+                <span className="relative z-10 italic">
+                  {submitting ? "Menyimpan..." : "Lanjut ke Tahap Terakhir"}
+                </span>
+                {!submitting &&
+                  Object.keys(answers).length >= questions.length &&
+                  questions.length > 0 && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes shimmer {
+          100% {
+            transform: translateX(100%);
+          }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+      `}</style>
     </div>
   );
 }
