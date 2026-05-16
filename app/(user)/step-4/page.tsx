@@ -146,11 +146,11 @@ export default function Step4Kuesioner() {
               </div>
 
               <div>
-                <h1 className="text-4xl md:text-5xl font-black leading-[1.1] tracking-tight mb-2 italic drop-shadow-md text-white">
-                  LEMBAR <br /> SOAL
+                <h1 className="text-3xl md:text-4xl font-black leading-[1.1] tracking-tight mb-2 italic drop-shadow-md text-white">
+                  LEMBAR <br /> PERTANYAAN
                 </h1>
-                <p className="text-slate-400 text-[11px] font-sans font-bold uppercase tracking-[0.2em] leading-relaxed mt-4">
-                  Uji Pemahaman Narasi
+                <p className="text-slate-400 text-[11px] font-sans font-bold tracking-[0.2em] leading-relaxed mt-4">
+                  Isilah dengan sungguh sungguh pada pertanyaan dibawah ini.
                 </p>
               </div>
             </div>

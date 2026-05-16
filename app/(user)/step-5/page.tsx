@@ -126,9 +126,6 @@ export default function Step5KuesionerSkala() {
                     Step 05/06
                   </span>
                 </div>
-                <h1 className="text-4xl md:text-5xl mt-3 font-black leading-[1.1] tracking-tight mb-2 italic drop-shadow-md text-white">
-                  KUESIONER <br /> INTI
-                </h1>
                 <p className="text-slate-400 text-[11px] font-sans font-bold uppercase tracking-[0.2em] mt-4">
                   Petunjuk Pengisian:
                 </p>

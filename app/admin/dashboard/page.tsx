@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function DashboardOverview() {
-  const TARGET_RESPONDENTS = 70;
+  const TARGET_RESPONDENTS = 110;
 
   const [stats, setStats] = useState({
     totalRespondents: 0,
@@ -143,190 +143,206 @@ export default function DashboardOverview() {
     totalIndMC > 0 ? Math.round((stats.mcIndustriWrong / totalIndMC) * 100) : 0;
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-10 font-sans bg-slate-50 min-h-screen">
-      <header>
-        <h1 className="text-3xl font-black text-slate-800 tracking-tight">
-          Executive Overview
+    <div className="w-full space-y-6 md:space-y-8 animate-in fade-in duration-700">
+      {/* HEADER DASHBOARD */}
+      <header className="mb-6 md:mb-10 pb-4 border-b border-slate-800">
+        <h1 className="text-2xl md:text-3xl font-black text-white tracking-widest uppercase flex items-center gap-3">
+          <span className="text-blue-500">❖</span> Executive Overview
         </h1>
-        <p className="text-slate-500 mt-1">
-          Pantauan real-time eksperimen psikologi (Target: {TARGET_RESPONDENTS}{" "}
-          Responden).
+        <p className="text-xs md:text-sm text-slate-400 mt-2 font-sans tracking-wide">
+          Pantauan real-time eksperimen psikologi{" "}
+          <span className="text-blue-400/80 font-bold bg-blue-900/20 px-2 py-0.5 rounded-md ml-1 border border-blue-800/50">
+            (Target: {TARGET_RESPONDENTS} Responden)
+          </span>
         </p>
       </header>
 
       {/* SECTION 1: TOP METRICS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         {/* Card 1: Progress Pencapaian */}
-        <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm relative overflow-hidden">
+        <div className="bg-slate-900/40 backdrop-blur-sm p-6 md:p-8 rounded-[24px] md:rounded-[32px] border border-slate-800/80 shadow-[0_10px_40px_rgba(0,0,0,0.4)] relative overflow-hidden group">
+          {/* Efek Glow Latar Hover */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[50px] group-hover:bg-blue-500/20 transition-all duration-500"></div>
+
           <div className="relative z-10">
-            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl mb-4">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-xl flex items-center justify-center text-xl md:text-2xl mb-4 md:mb-5 shadow-inner">
               🎯
             </div>
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+            <p className="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest">
               Total Responden
             </p>
             <div className="flex items-baseline gap-2 mt-1">
-              <p className="text-4xl font-black text-slate-800">
+              <p className="text-4xl md:text-5xl font-black text-white drop-shadow-md">
                 {stats.totalRespondents}
               </p>
-              <p className="text-sm font-bold text-slate-400">
+              <p className="text-xs md:text-sm font-bold text-slate-500">
                 / {TARGET_RESPONDENTS}
               </p>
             </div>
-            <div className="mt-4 h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="mt-5 h-1.5 w-full bg-slate-800/80 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-600 transition-all duration-1000"
+                className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] transition-all duration-1000 ease-out"
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
-            <p className="text-xs text-right mt-2 text-blue-600 font-bold">
+            <p className="text-[10px] md:text-xs text-right mt-2 text-blue-400 font-bold uppercase tracking-widest">
               {progressPercent}% Tercapai
             </p>
           </div>
         </div>
 
         {/* Card 2: Keseimbangan Kelompok */}
-        <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm">
-          <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl mb-4">
-            ⚖️
-          </div>
-          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
-            Distribusi Kelompok
-          </p>
-          <div className="mt-4 space-y-4">
-            <div>
-              <div className="flex justify-between text-xs font-bold mb-1.5">
-                <span className="text-red-600 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-red-500"></span>{" "}
-                  Politik ({stats.politikCount})
-                </span>
-                <span className="text-slate-400">
-                  {stats.totalRespondents > 0
-                    ? Math.round(
-                        (stats.politikCount / stats.totalRespondents) * 100,
-                      )
-                    : 0}
-                  %
-                </span>
-              </div>
-              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-red-500 transition-all duration-1000"
-                  style={{
-                    width: `${stats.totalRespondents > 0 ? (stats.politikCount / stats.totalRespondents) * 100 : 0}%`,
-                  }}
-                ></div>
-              </div>
+        <div className="bg-slate-900/40 backdrop-blur-sm p-6 md:p-8 rounded-[24px] md:rounded-[32px] border border-slate-800/80 shadow-[0_10px_40px_rgba(0,0,0,0.4)] relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[50px] group-hover:bg-indigo-500/20 transition-all duration-500"></div>
+
+          <div className="relative z-10">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded-xl flex items-center justify-center text-xl md:text-2xl mb-4 md:mb-5 shadow-inner">
+              ⚖️
             </div>
-            <div>
-              <div className="flex justify-between text-xs font-bold mb-1.5">
-                <span className="text-amber-600 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>{" "}
-                  Industri ({stats.industriCount})
-                </span>
-                <span className="text-slate-400">
-                  {stats.totalRespondents > 0
-                    ? Math.round(
-                        (stats.industriCount / stats.totalRespondents) * 100,
-                      )
-                    : 0}
-                  %
-                </span>
+            <p className="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest mb-4">
+              Distribusi Kelompok
+            </p>
+
+            <div className="space-y-4">
+              {/* Bar Politik */}
+              <div>
+                <div className="flex justify-between text-[10px] md:text-xs font-bold mb-1.5">
+                  <span className="text-red-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
+                    Politik ({stats.politikCount})
+                  </span>
+                  <span className="text-slate-400">
+                    {stats.totalRespondents > 0
+                      ? Math.round(
+                          (stats.politikCount / stats.totalRespondents) * 100,
+                        )
+                      : 0}
+                    %
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-slate-800/80 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] transition-all duration-1000 ease-out"
+                    style={{
+                      width: `${stats.totalRespondents > 0 ? (stats.politikCount / stats.totalRespondents) * 100 : 0}%`,
+                    }}
+                  ></div>
+                </div>
               </div>
-              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-amber-500 transition-all duration-1000"
-                  style={{
-                    width: `${stats.totalRespondents > 0 ? (stats.industriCount / stats.totalRespondents) * 100 : 0}%`,
-                  }}
-                ></div>
+
+              {/* Bar Industri */}
+              <div>
+                <div className="flex justify-between text-[10px] md:text-xs font-bold mb-1.5">
+                  <span className="text-amber-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
+                    Industri ({stats.industriCount})
+                  </span>
+                  <span className="text-slate-400">
+                    {stats.totalRespondents > 0
+                      ? Math.round(
+                          (stats.industriCount / stats.totalRespondents) * 100,
+                        )
+                      : 0}
+                    %
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-slate-800/80 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)] transition-all duration-1000 ease-out"
+                    style={{
+                      width: `${stats.totalRespondents > 0 ? (stats.industriCount / stats.totalRespondents) * 100 : 0}%`,
+                    }}
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Card 3: Rata-rata Waktu */}
-        <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl mb-4">
+        <div className="bg-slate-900/40 backdrop-blur-sm p-6 md:p-8 rounded-[24px] md:rounded-[32px] border border-slate-800/80 shadow-[0_10px_40px_rgba(0,0,0,0.4)] relative overflow-hidden flex flex-col justify-between group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[50px] group-hover:bg-emerald-500/20 transition-all duration-500"></div>
+
+          <div className="relative z-10">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center text-xl md:text-2xl mb-4 md:mb-5 shadow-inner">
               ⏱️
             </div>
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
-              Rata-Rata Pengerjaan
+            <p className="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest">
+              Rata-Rata Waktu
             </p>
-            <p className="text-4xl font-black text-emerald-600 mt-1">
+            <p className="text-4xl md:text-5xl font-black text-emerald-400 mt-1 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">
               {formatTime(stats.avgDurationSec)}
             </p>
           </div>
-          <div className="p-3 bg-slate-50 rounded-xl mt-4 border border-slate-100">
-            <p className="text-[10px] text-slate-500 leading-relaxed italic font-medium">
-              *Perhatikan waktu rata-rata. Waktu yang terlalu singkat berpotensi
-              mengindikasikan responden tidak membaca narasi dengan saksama.
+          <div className="p-3 md:p-4 bg-emerald-950/20 rounded-xl mt-4 md:mt-6 border border-emerald-900/30 relative z-10">
+            <p className="text-[9px] md:text-[10px] text-emerald-200/60 leading-relaxed italic font-bold">
+              *Waktu yang terlalu singkat berpotensi mengindikasikan responden
+              tidak membaca narasi dengan saksama.
             </p>
           </div>
         </div>
       </div>
 
       {/* SECTION 2: KOMPARASI MANIPULATION CHECK */}
-      <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
-        <div className="mb-8 border-b border-slate-100 pb-6">
-          <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-            <span className="text-2xl">🧠</span> Manipulation Check Success Rate
+      <div className="bg-slate-900/40 backdrop-blur-sm p-6 md:p-10 rounded-[32px] md:rounded-[40px] border border-slate-800/80 shadow-[0_10px_40px_rgba(0,0,0,0.4)] mt-6">
+        <div className="mb-8 border-b border-slate-800/60 pb-6 md:pb-8">
+          <h2 className="text-lg md:text-xl font-black text-white flex items-center gap-3 uppercase tracking-widest">
+            <span className="text-2xl">🧠</span> Manipulation Check
           </h2>
-          <p className="text-sm text-slate-500 mt-2 max-w-2xl leading-relaxed">
-            Perbandingan tingkat keberhasilan partisipan dalam menjawab soal
-            pemahaman narasi (Multiple Choice) antara Kelompok Politik dan
-            Kelompok Industri.
+          <p className="text-[10px] md:text-xs text-slate-400 mt-2 max-w-2xl leading-relaxed">
+            Perbandingan tingkat keberhasilan responden menjawab soal pemahaman
+            narasi (Multiple Choice) antara kelompok.
           </p>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="h-24 bg-slate-100 rounded-2xl animate-pulse"></div>
-            <div className="h-24 bg-slate-100 rounded-2xl animate-pulse"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+            <div className="h-28 bg-slate-800/50 rounded-2xl animate-pulse"></div>
+            <div className="h-28 bg-slate-800/50 rounded-2xl animate-pulse"></div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             {/* CHART 1: POLITIK */}
-            <div>
-              <div className="flex justify-between items-end mb-3">
-                <h3 className="font-black text-slate-800 flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-red-500"></span>{" "}
-                  Kelompok Politik
+            <div className="bg-slate-950/40 p-5 md:p-6 rounded-2xl border border-slate-800">
+              <div className="flex justify-between items-end mb-4">
+                <h3 className="font-black text-white flex items-center gap-2 text-xs md:text-sm uppercase tracking-widest">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
+                  Kel. Politik
                 </h3>
-                <p className="text-xs font-bold text-slate-400">
-                  {totalPolMC} Total Soal
+                <p className="text-[10px] md:text-xs font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md border border-slate-800">
+                  {totalPolMC} Soal
                 </p>
               </div>
+
               {totalPolMC === 0 ? (
-                <div className="h-12 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-400 italic">
-                  Belum ada data
+                <div className="h-10 bg-slate-900 rounded-xl border border-dashed border-slate-700 flex items-center justify-center text-[10px] text-slate-500 italic">
+                  Belum ada partisipan
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="h-10 flex rounded-xl overflow-hidden shadow-inner border border-slate-100">
+                  <div className="h-8 md:h-10 flex rounded-xl overflow-hidden shadow-inner border border-slate-800">
                     <div
-                      className="bg-emerald-500 flex items-center justify-center text-white font-black text-xs transition-all duration-1000"
+                      className="bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] flex items-center justify-center text-white font-black text-[10px] transition-all duration-1000 ease-out"
                       style={{ width: `${polCorrectPct}%` }}
                     >
                       {polCorrectPct > 10 && `${polCorrectPct}%`}
                     </div>
                     <div
-                      className="bg-rose-500 flex items-center justify-center text-white font-black text-xs transition-all duration-1000"
+                      className="bg-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.5)] flex items-center justify-center text-white font-black text-[10px] transition-all duration-1000 ease-out"
                       style={{ width: `${polWrongPct}%` }}
                     >
                       {polWrongPct > 10 && `${polWrongPct}%`}
                     </div>
                   </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-slate-600">
+                  <div className="flex justify-between items-center text-[10px] md:text-xs uppercase tracking-widest bg-slate-900 p-2 rounded-lg border border-slate-800">
+                    <span className="font-bold text-slate-400">
                       Benar:{" "}
-                      <span className="text-emerald-600">
+                      <span className="text-emerald-400">
                         {stats.mcPolitikCorrect}
                       </span>
                     </span>
-                    <span className="font-bold text-slate-600">
-                      <span className="text-rose-600">
+                    <span className="font-bold text-slate-400">
+                      <span className="text-rose-400">
                         {stats.mcPolitikWrong}
                       </span>{" "}
                       :Salah
@@ -337,45 +353,46 @@ export default function DashboardOverview() {
             </div>
 
             {/* CHART 2: INDUSTRI */}
-            <div>
-              <div className="flex justify-between items-end mb-3">
-                <h3 className="font-black text-slate-800 flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-amber-500"></span>{" "}
-                  Kelompok Industri
+            <div className="bg-slate-950/40 p-5 md:p-6 rounded-2xl border border-slate-800">
+              <div className="flex justify-between items-end mb-4">
+                <h3 className="font-black text-white flex items-center gap-2 text-xs md:text-sm uppercase tracking-widest">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
+                  Kel. Industri
                 </h3>
-                <p className="text-xs font-bold text-slate-400">
-                  {totalIndMC} Total Soal
+                <p className="text-[10px] md:text-xs font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md border border-slate-800">
+                  {totalIndMC} Soal
                 </p>
               </div>
+
               {totalIndMC === 0 ? (
-                <div className="h-12 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-400 italic">
-                  Belum ada data
+                <div className="h-10 bg-slate-900 rounded-xl border border-dashed border-slate-700 flex items-center justify-center text-[10px] text-slate-500 italic">
+                  Belum ada partisipan
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="h-10 flex rounded-xl overflow-hidden shadow-inner border border-slate-100">
+                  <div className="h-8 md:h-10 flex rounded-xl overflow-hidden shadow-inner border border-slate-800">
                     <div
-                      className="bg-emerald-500 flex items-center justify-center text-white font-black text-xs transition-all duration-1000"
+                      className="bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] flex items-center justify-center text-white font-black text-[10px] transition-all duration-1000 ease-out"
                       style={{ width: `${indCorrectPct}%` }}
                     >
                       {indCorrectPct > 10 && `${indCorrectPct}%`}
                     </div>
                     <div
-                      className="bg-rose-500 flex items-center justify-center text-white font-black text-xs transition-all duration-1000"
+                      className="bg-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.5)] flex items-center justify-center text-white font-black text-[10px] transition-all duration-1000 ease-out"
                       style={{ width: `${indWrongPct}%` }}
                     >
                       {indWrongPct > 10 && `${indWrongPct}%`}
                     </div>
                   </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-slate-600">
+                  <div className="flex justify-between items-center text-[10px] md:text-xs uppercase tracking-widest bg-slate-900 p-2 rounded-lg border border-slate-800">
+                    <span className="font-bold text-slate-400">
                       Benar:{" "}
-                      <span className="text-emerald-600">
+                      <span className="text-emerald-400">
                         {stats.mcIndustriCorrect}
                       </span>
                     </span>
-                    <span className="font-bold text-slate-600">
-                      <span className="text-rose-600">
+                    <span className="font-bold text-slate-400">
+                      <span className="text-rose-400">
                         {stats.mcIndustriWrong}
                       </span>{" "}
                       :Salah
