@@ -719,15 +719,15 @@ export default function ResultDashboard() {
       {/* TAB 2: SOAL */}
       {activeTab === "soal" && (
         <div className="space-y-6">
-          <div className="flex flex-wrap gap-2 md:gap-4 p-2 bg-slate-950/40 rounded-xl border border-slate-800 w-full md:w-fit justify-start">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 p-1.5 bg-slate-950/40 rounded-xl border border-slate-800/80 w-full sm:w-fit justify-start">
             {questionTabs.map((qt) => (
               <button
                 key={qt.id}
                 onClick={() => setActiveQuestionTab(qt.id)}
-                className={`px-4 py-2.5 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`px-2 sm:px-4 py-2.5 rounded-lg text-[9px] md:text-[10px] font-black tracking-widest transition-all text-center whitespace-nowrap ${
                   activeQuestionTab === qt.id
                     ? "bg-blue-600 text-white shadow-md shadow-blue-500/15 animate-in fade-in"
-                    : "text-slate-500 hover:text-slate-300 bg-transparent"
+                    : "text-slate-500 hover:text-slate-300 bg-slate-900/20 sm:bg-transparent border border-transparent hover:border-slate-800"
                 }`}
               >
                 {qt.label}
