@@ -348,7 +348,7 @@ export default function ResultDashboard() {
     link.href = url;
     link.setAttribute(
       "download",
-      `Rekap_Eksperimen_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xls`,
+      `Rekap_Eksperimen_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`,
     );
     document.body.appendChild(link);
     link.click();
