@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-// Injeksi CDN SheetJS resmi dari cdnjs agar menghasilkan biner (.xlsx) murni tanpa install npm
+// Injeksi CDN SheetJS resmi (Gunakan versi standar yang stabil dan super ringan)
 const XLSX_CDN =
   "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
 
@@ -145,7 +145,7 @@ export default function ResultDashboard() {
     }
   };
 
-  // 🔥 UPGRADE LOGIKA EXPORT: Mengatur Wrap Text, Lebar Kolom, dan Perataan Atas secara Native di .xlsx
+  // 🔥 PERBAIKAN TOTAL: Proses Ringan, Cepat, Mengatur Lebar Kolom Tanpa Bikin Crash
   const exportToExcelMultiSheets = () => {
     const XLSX = (window as any).XLSX;
     if (!XLSX) {
@@ -161,9 +161,9 @@ export default function ResultDashboard() {
     const typeOrder = ["politik", "industri", "skala", "suspicion"];
 
     const getLabel = (type: string) => {
-      if (type === "politik") return "MC KE";
-      if (type === "industri") return "MC KK";
-      if (type === "skala") return "KUESIONER";
+      if (type === "politik") return "MC KEL. POLITIK";
+      if (type === "industri") return "MC KEL. INDUSTRI";
+      if (type === "skala") return "KUESIONER / SKALA";
       if (type === "suspicion") return "SUSPICION CHECK";
       return type.toUpperCase();
     };
@@ -225,11 +225,7 @@ export default function ResultDashboard() {
         matrixData.push(row);
       });
 
-      return {
-        matrixData,
-        filteredQuestionsCount: filteredQuestions.length,
-        baseCount: baseHeaders.length,
-      };
+      return { matrixData, baseCount: baseHeaders.length };
     };
 
     const dataAll = generateSheetMatrix(respondents, [
@@ -250,53 +246,27 @@ export default function ResultDashboard() {
     const wb = XLSX.utils.book_new();
 
     const appendSheet = (sheetName: string, sheetInfo: any) => {
+      // Ubah Array Matriks menjadi Lembar Kerja Excel
       const ws = XLSX.utils.aoa_to_sheet(sheetInfo.matrixData);
 
-      // 1. Atur Lebar Kolom secara Spesifik (WCH)
+      // KUNCI PERBAIKAN: Set Lebar Kolom secara aman (Tanpa Loop Sel Aligment yang bikin Hang)
       const colWidths: any[] = [];
-      for (
-        let i = 0;
-        i < sheetInfo.colCount || sheetInfo.matrixData[1].length;
-        i++
-      ) {
+      const totalCols = sheetInfo.matrixData[1].length;
+
+      for (let i = 0; i < totalCols; i++) {
         if (i < sheetInfo.baseCount) {
-          // Kolom Data Diri diset proporsional sedang
           if (i === 0)
             colWidths.push({ wch: 15 }); // ID
-          else if (i === 1)
-            colWidths.push({ wch: 20 }); // Nama
-          else if (i === 10)
-            colWidths.push({ wch: 20 }); // Waktu Masuk
-          else colWidths.push({ wch: 13 }); // Lainnya
+          else if (i === 1 || i === 10)
+            colWidths.push({ wch: 22 }); // Nama & Waktu
+          else colWidths.push({ wch: 12 }); // Atribut Responden biasa
         } else {
-          // Kolom Soal yang panjang diset Lebar 45 karakter agar menekuk ke bawah
-          colWidths.push({ wch: 45 });
+          colWidths.push({ wch: 50 }); // Kolom pertanyaan skripsi dibuat lebar 50 karakter agar longgar
         }
       }
       ws["!cols"] = colWidths;
 
-      // 2. Terapkan Properti WRAP TEXT & ALIGNMENT pada Semua Cell yang memiliki isi
-      const range = XLSX.utils.decode_range(ws["!ref"] || "A1:A1");
-      for (let R = range.s.r; R <= range.e.r; ++R) {
-        for (let C = range.s.c; C <= range.e.c; ++C) {
-          const cell_address = { c: C, r: R };
-          const cell_ref = XLSX.utils.encode_cell(cell_address);
-
-          if (!ws[cell_ref]) continue;
-
-          // Inisialisasi objek style jika belum ada
-          if (!ws[cell_ref].s) ws[cell_ref].s = {};
-
-          // Berikan alignment rata atas (top) dan bungkus teks (wrapText)
-          ws[cell_ref].s.alignment = {
-            wrapText: true,
-            vertical: "top",
-            horizontal: R < 2 ? "center" : "left", // Header di tengah, isi di kiri
-          };
-        }
-      }
-
-      // 3. Logika Gabung Cell (Merge) Baris 1
+      // Logika Gabung Cell (Merge) Baris Atas
       const merges = [
         { s: { r: 0, c: 0 }, e: { r: 0, c: sheetInfo.baseCount - 1 } },
       ];
@@ -344,6 +314,7 @@ export default function ResultDashboard() {
     appendSheet("Kelompok Politik", dataPol);
     appendSheet("Kelompok Ekonomi", dataInd);
 
+    // Langsung Tembak Unduh Berkas .XLSX murni
     XLSX.writeFile(
       wb,
       `Rekap_Eksperimen_Skripsi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`,
