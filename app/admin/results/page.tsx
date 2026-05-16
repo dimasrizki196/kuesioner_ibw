@@ -1,10 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-
-// Injeksi CDN SheetJS resmi (Gunakan versi standar yang stabil dan super ringan)
-const XLSX_CDN =
-  "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+import ExcelJS from "exceljs";
 
 export default function ResultDashboard() {
   const [activeTab, setActiveTab] = useState<"individu" | "soal">("individu");
@@ -15,8 +12,6 @@ export default function ResultDashboard() {
   const [loading, setLoading] = useState(true);
 
   const [selectedRespondent, setSelectedRespondent] = useState<any>(null);
-
-  // State Untuk Fitur Hapus Massal & Modal Konfirmasi
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{
     ids: string[];
@@ -34,12 +29,6 @@ export default function ResultDashboard() {
 
   useEffect(() => {
     fetchData();
-    if (typeof window !== "undefined" && !(window as any).XLSX) {
-      const script = document.createElement("script");
-      script.src = XLSX_CDN;
-      script.async = true;
-      document.body.appendChild(script);
-    }
   }, []);
 
   async function fetchData() {
@@ -123,7 +112,6 @@ export default function ResultDashboard() {
   const executeDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
-
     try {
       await supabase
         .from("answers")
@@ -134,7 +122,6 @@ export default function ResultDashboard() {
         .delete()
         .in("id", deleteTarget.ids);
       if (error) throw error;
-
       setSelectedIds([]);
       setDeleteTarget(null);
       fetchData();
@@ -145,74 +132,184 @@ export default function ResultDashboard() {
     }
   };
 
-  // 🔥 PERBAIKAN TOTAL: Proses Ringan, Cepat, Mengatur Lebar Kolom Tanpa Bikin Crash
-  const exportToExcelMultiSheets = () => {
-    const XLSX = (window as any).XLSX;
-    if (!XLSX) {
-      alert("Engine Excel sedang dimuat, mohon coba sesaat lagi.");
-      return;
-    }
-
+  // 🔥 SOLUSI OLEH DATA: Export Excel murni dengan Auto-Fit lebar kolom jawaban dinamis
+  const exportToExcelPremium = async () => {
     if (respondents.length === 0 || questions.length === 0) {
       alert("Belum ada data untuk di-export.");
       return;
     }
 
+    const workbook = new ExcelJS.Workbook();
     const typeOrder = ["politik", "industri", "skala", "suspicion"];
 
-    const getLabel = (type: string) => {
-      if (type === "politik") return "MC KEL. POLITIK";
-      if (type === "industri") return "MC KEL. INDUSTRI";
-      if (type === "skala") return "KUESIONER / SKALA";
-      if (type === "suspicion") return "SUSPICION CHECK";
-      return type.toUpperCase();
+    const baseHeaders = [
+      "ID Responden",
+      "Nama/Inisial",
+      "Usia",
+      "Gender",
+      "Domisili",
+      "Pendidikan",
+      "WhatsApp",
+      "Kelompok",
+      "Skor MC",
+      "Durasi (Detik)",
+      "Waktu Masuk",
+    ];
+
+    const colors = {
+      politik: "FFF1F5F9", // Abu-abu Terang
+      industri: "FFDCFCE7", // Hijau Muda
+      skala: "FFFEF9C3", // Kuning Muda
+      suspicion: "FFE0F2FE", // Biru Muda
+      headerResponden: "FF0F172A",
+      headerPolitik: "FF475569",
+      headerIndustri: "FF16A34A",
+      headerSkala: "FFCA8A04",
+      headerSuspicion: "FF2563EB",
+      subHeaderBase: "FFE2E8F0",
     };
 
-    const generateSheetMatrix = (
-      dataset: any[],
-      allowedQuestionTypes: string[],
+    const addSheetData = (
+      sheetName: string,
+      filteredRespondents: any[],
+      allowedTypes: string[],
     ) => {
+      const worksheet = workbook.addWorksheet(sheetName);
+
       const filteredQuestions = questions
-        .filter((q) => allowedQuestionTypes.includes(q.type))
+        .filter((q) => allowedTypes.includes(q.type))
         .sort((a, b) => typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type));
 
-      const baseHeaders = [
-        "ID Responden",
-        "Nama/Inisial",
-        "Usia",
-        "Gender",
-        "Domisili",
-        "Pendidikan",
-        "WhatsApp",
-        "Kelompok",
-        "Skor MC",
-        "Durasi (Detik)",
-        "Waktu Masuk",
-      ];
+      // 1. BARIS 1: Header Grup (Merged)
+      const groupRow = worksheet.addRow([]);
+      groupRow.height = 28;
 
-      const row1 = [...baseHeaders.map(() => "DATA RESPONDEN")];
-      filteredQuestions.forEach((q) => {
-        row1.push(getLabel(q.type));
+      worksheet.mergeCells(1, 1, 1, baseHeaders.length);
+      const cellRes = worksheet.getCell(1, 1);
+      cellRes.value = "DATA RESPONDEN";
+      cellRes.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      cellRes.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: colors.headerResponden },
+      };
+      cellRes.alignment = { vertical: "middle", horizontal: "center" };
+
+      let currentColIndex = baseHeaders.length + 1;
+      typeOrder.forEach((t) => {
+        const qCount = filteredQuestions.filter((q) => q.type === t).length;
+        if (qCount > 0) {
+          worksheet.mergeCells(
+            1,
+            currentColIndex,
+            1,
+            currentColIndex + qCount - 1,
+          );
+          const cellGroup = worksheet.getCell(1, currentColIndex);
+
+          let label = "";
+          let bgGroup = "";
+          if (t === "politik") {
+            label = "MC POLITIK (ABU)";
+            bgGroup = colors.headerPolitik;
+          }
+          if (t === "industri") {
+            label = "MC EKONOMI (HIJAU)";
+            bgGroup = colors.headerIndustri;
+          }
+          if (t === "skala") {
+            label = "KUESIONER (KUNING)";
+            bgGroup = colors.headerSkala;
+          }
+          if (t === "suspicion") {
+            label = "SUSPICION CHECK (BIRU)";
+            bgGroup = colors.headerSuspicion;
+          }
+
+          cellGroup.value = label;
+          cellGroup.font = {
+            bold: true,
+            color: { argb: "FFFFFFFF" },
+            size: 11,
+          };
+          cellGroup.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: bgGroup },
+          };
+          cellGroup.alignment = { vertical: "middle", horizontal: "center" };
+
+          currentColIndex += qCount;
+        }
       });
 
-      const row2 = [
-        ...baseHeaders,
-        ...filteredQuestions.map((q) => q.question_text),
-      ];
-      const matrixData = [row1, row2];
+      // 2. BARIS 2: Sub-Header Kolom
+      const subHeaderRow = worksheet.addRow([]);
+      subHeaderRow.height = 24;
 
-      dataset.forEach((r) => {
-        const row = [
+      baseHeaders.forEach((h, idx) => {
+        const cell = subHeaderRow.getCell(idx + 1);
+        cell.value = h;
+        cell.font = { bold: true, size: 10 };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: colors.subHeaderBase },
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+
+      const questionCounts: Record<string, number> = {
+        politik: 0,
+        industri: 0,
+        skala: 0,
+        suspicion: 0,
+      };
+      filteredQuestions.forEach((q, idx) => {
+        questionCounts[q.type]++;
+        const cell = subHeaderRow.getCell(baseHeaders.length + idx + 1);
+        cell.value = questionCounts[q.type];
+        cell.font = { bold: true, size: 11 };
+
+        let bgQ = "FFFFFFFF";
+        if (q.type === "politik") bgQ = colors.politik;
+        if (q.type === "industri") bgQ = colors.industri;
+        if (q.type === "skala") bgQ = colors.skala;
+        if (q.type === "suspicion") bgQ = colors.suspicion;
+
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: bgQ },
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+
+      // 3. BARIS DATA RESPONDEN & REKAP JAWABAN
+      filteredRespondents.forEach((r) => {
+        const rowData = [
           r.id,
           r.name,
-          Number(r.age) || r.age,
+          r.age,
           r.gender,
           r.domicile,
           r.last_education,
           r.phone || "-",
           r.assignedType,
           `${r.correctCount} / ${r.mcTotal}`,
-          Number(r.duration_seconds) || r.duration_seconds,
+          r.duration_seconds,
           new Date(r.created_at).toLocaleString("id-ID"),
         ];
 
@@ -220,105 +317,175 @@ export default function ResultDashboard() {
           const ansObj = r.enrichedAnswers.find(
             (a: any) => a.question_id === q.id,
           );
-          row.push(ansObj ? ansObj.answer_value : "-");
+          rowData.push(ansObj ? ansObj.answer_value : "-");
         });
-        matrixData.push(row);
+
+        const addedRow = worksheet.addRow(rowData);
+        addedRow.height = 20;
+        addedRow.eachCell((cell, colNumber) => {
+          cell.alignment = {
+            vertical: "middle",
+            horizontal: colNumber > baseHeaders.length ? "center" : "left",
+          };
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+          cell.font = { size: 10 };
+        });
       });
 
-      return { matrixData, baseCount: baseHeaders.length };
+      // Beri jarak 2 baris kosong
+      worksheet.addRow([]);
+      worksheet.addRow([]);
+
+      // 4. DAFTAR LIST GLOSARIUM SOAL DI BAWAH TABEL
+      const glosariumHeader = worksheet.addRow([
+        "KUNCI DAFTAR BUTIR PERTANYAAN KUESIONER SKRIPSI",
+      ]);
+      glosariumHeader.height = 24;
+      worksheet.mergeCells(
+        glosariumHeader.number,
+        1,
+        glosariumHeader.number,
+        baseHeaders.length,
+      );
+      const gCell = glosariumHeader.getCell(1);
+      gCell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      gCell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: colors.headerResponden },
+      };
+      gCell.alignment = { vertical: "middle" };
+
+      const typeLabels: Record<string, string> = {
+        politik: "MC POLITIK (ABU-ABU)",
+        industri: "MC EKONOMI (HIJAU)",
+        skala: "KUESIONER (KUNING)",
+        suspicion: "SUSPICION CHECK (BIRU)",
+      };
+
+      allowedTypes.forEach((t) => {
+        const qOfT = filteredQuestions.filter((q) => q.type === t);
+        if (qOfT.length > 0) {
+          const sectionRow = worksheet.addRow([typeLabels[t]]);
+          sectionRow.height = 22;
+          worksheet.mergeCells(
+            sectionRow.number,
+            1,
+            sectionRow.number,
+            baseHeaders.length,
+          );
+          const sCell = sectionRow.getCell(1);
+          sCell.font = { bold: true, size: 10, color: { argb: "FF334155" } };
+          sCell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: colors.subHeaderBase },
+          };
+          sCell.alignment = { vertical: "middle" };
+
+          let sideColor = "FFFFFFFF";
+          if (t === "politik") sideColor = colors.politik;
+          if (t === "industri") sideColor = colors.industri;
+          if (t === "skala") sideColor = colors.skala;
+          if (t === "suspicion") sideColor = colors.suspicion;
+
+          qOfT.forEach((q, idx) => {
+            const qRow = worksheet.addRow([idx + 1, q.question_text]);
+            qRow.height = 20;
+            worksheet.mergeCells(
+              qRow.number,
+              2,
+              qRow.number,
+              baseHeaders.length + 3,
+            );
+
+            const cellNum = qRow.getCell(1);
+            cellNum.font = { bold: true, size: 10 };
+            cellNum.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: sideColor },
+            };
+            cellNum.alignment = { horizontal: "center", vertical: "middle" };
+            cellNum.border = {
+              top: { style: "thin" },
+              left: { style: "thin" },
+              bottom: { style: "thin" },
+              right: { style: "thin" },
+            };
+
+            const cellTxt = qRow.getCell(2);
+            cellTxt.font = { size: 10 };
+            cellTxt.alignment = { vertical: "middle", wrapText: true };
+          });
+        }
+      });
+
+      // 🛠️ LOGIKA BARU: AUTO-FIT LEBAR KOLOM JAWABAN DINAMIS Sesuai Teks Jawaban Responden
+      worksheet.columns.forEach((column, i) => {
+        if (i < baseHeaders.length) {
+          // Kolom biodata diatur ukuran default yang ideal
+          column.width = i === 0 || i === 10 ? 24 : 15;
+        } else {
+          // Cari panjang karakter jawaban responden terpanjang pada kolom ini
+          let maxLength = 7; // Minimal lebar kolom (biar muat angka indeks di header)
+
+          worksheet.eachRow({ includeEmpty: false }, (row, rowNum) => {
+            // Kita ukur text length hanya pada baris data responden (Baris 3 ke atas, sebelum area glosarium)
+            if (rowNum > 2 && rowNum <= filteredRespondents.length + 2) {
+              const cellValue = row.getCell(i + 1).value;
+              if (cellValue) {
+                const cellLength = String(cellValue).length;
+                if (cellLength > maxLength) {
+                  maxLength = cellLength;
+                }
+              }
+            }
+          });
+
+          // Set lebar kolom + beri sedikit padding aman (+4) agar teks tidak mepet ke border sel
+          column.width = Math.min(maxLength + 4, 60); // Batasi maksimal lebar 60 biar tidak terlalu lebar jika jawaban esai kepanjangan
+        }
+      });
     };
 
-    const dataAll = generateSheetMatrix(respondents, [
+    // Eksekusi Pembuatan 3 Tab Sesuai Kelompok Eksperimen
+    addSheetData("Keseluruhan", respondents, [
       "politik",
       "industri",
       "skala",
       "suspicion",
     ]);
-    const dataPol = generateSheetMatrix(
+    addSheetData(
+      "Kelompok Politik",
       respondents.filter((r) => r.assignedType === "politik"),
       ["politik", "skala", "suspicion"],
     );
-    const dataInd = generateSheetMatrix(
+    addSheetData(
+      "Kelompok Ekonomi",
       respondents.filter((r) => r.assignedType === "industri"),
       ["industri", "skala", "suspicion"],
     );
 
-    const wb = XLSX.utils.book_new();
-
-    const appendSheet = (sheetName: string, sheetInfo: any) => {
-      // Ubah Array Matriks menjadi Lembar Kerja Excel
-      const ws = XLSX.utils.aoa_to_sheet(sheetInfo.matrixData);
-
-      // KUNCI PERBAIKAN: Set Lebar Kolom secara aman (Tanpa Loop Sel Aligment yang bikin Hang)
-      const colWidths: any[] = [];
-      const totalCols = sheetInfo.matrixData[1].length;
-
-      for (let i = 0; i < totalCols; i++) {
-        if (i < sheetInfo.baseCount) {
-          if (i === 0)
-            colWidths.push({ wch: 15 }); // ID
-          else if (i === 1 || i === 10)
-            colWidths.push({ wch: 22 }); // Nama & Waktu
-          else colWidths.push({ wch: 12 }); // Atribut Responden biasa
-        } else {
-          colWidths.push({ wch: 50 }); // Kolom pertanyaan skripsi dibuat lebar 50 karakter agar longgar
-        }
-      }
-      ws["!cols"] = colWidths;
-
-      // Logika Gabung Cell (Merge) Baris Atas
-      const merges = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: sheetInfo.baseCount - 1 } },
-      ];
-      let currentColIdx = sheetInfo.baseCount;
-
-      const allowedTypes =
-        sheetName === "Kelompok Politik"
-          ? ["politik", "skala", "suspicion"]
-          : sheetName === "Kelompok Ekonomi"
-            ? ["industri", "skala", "suspicion"]
-            : ["politik", "industri", "skala", "suspicion"];
-
-      const filteredQuestions = questions
-        .filter((q) => allowedTypes.includes(q.type))
-        .sort((a, b) => typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type));
-
-      let currentType = "";
-      let startIdx = currentColIdx;
-
-      filteredQuestions.forEach((q) => {
-        if (q.type !== currentType) {
-          if (currentType !== "") {
-            merges.push({
-              s: { r: 0, c: startIdx },
-              e: { r: 0, c: currentColIdx - 1 },
-            });
-          }
-          currentType = q.type;
-          startIdx = currentColIdx;
-        }
-        currentColIdx++;
-      });
-      if (currentColIdx > startIdx) {
-        merges.push({
-          s: { r: 0, c: startIdx },
-          e: { r: 0, c: currentColIdx - 1 },
-        });
-      }
-
-      ws["!merges"] = merges;
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    };
-
-    appendSheet("Keseluruhan", dataAll);
-    appendSheet("Kelompok Politik", dataPol);
-    appendSheet("Kelompok Ekonomi", dataInd);
-
-    // Langsung Tembak Unduh Berkas .XLSX murni
-    XLSX.writeFile(
-      wb,
-      `Rekap_Eksperimen_Skripsi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`,
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `Data_Eksperimen_Skripsi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`,
     );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const formatDuration = (seconds: number) => {
@@ -346,7 +513,7 @@ export default function ResultDashboard() {
         </div>
 
         <button
-          onClick={exportToExcelMultiSheets}
+          onClick={exportToExcelPremium}
           disabled={loading || respondents.length === 0}
           className="flex items-center gap-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/50 px-5 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(16,185,129,0.2)] w-full sm:w-auto justify-center"
         >
@@ -494,11 +661,13 @@ export default function ResultDashboard() {
                           <span
                             className={`px-3 py-1.5 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest border ${
                               r.assignedType === "politik"
-                                ? "bg-red-500/10 text-red-400 border-red-500/30"
-                                : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                                ? "bg-slate-700 text-slate-300 border-slate-600"
+                                : "bg-emerald-950/40 text-emerald-400 border-emerald-800/50"
                             }`}
                           >
-                            {r.assignedType}
+                            {r.assignedType === "politik"
+                              ? "Politik"
+                              : "Ekonomi"}
                           </span>
                         </td>
                         <td className="p-4 md:p-5 text-center">
