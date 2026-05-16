@@ -34,7 +34,6 @@ export default function ResultDashboard() {
 
   useEffect(() => {
     fetchData();
-    // Load SheetJS engine ke dalam DOM secara otomatis
     if (typeof window !== "undefined" && !(window as any).XLSX) {
       const script = document.createElement("script");
       script.src = XLSX_CDN;
@@ -146,7 +145,7 @@ export default function ResultDashboard() {
     }
   };
 
-  // 🔥 SOLUSI TOTAL: Bikin Berkas .XLSX Murni Menggunakan SheetJS Engine (Anti-Gagal)
+  // 🔥 UPGRADE LOGIKA EXPORT: Mengatur Wrap Text, Lebar Kolom, dan Perataan Atas secara Native di .xlsx
   const exportToExcelMultiSheets = () => {
     const XLSX = (window as any).XLSX;
     if (!XLSX) {
@@ -191,19 +190,15 @@ export default function ResultDashboard() {
         "Waktu Masuk",
       ];
 
-      // Baris 1: Tipe / Kategori Soal
       const row1 = [...baseHeaders.map(() => "DATA RESPONDEN")];
       filteredQuestions.forEach((q) => {
         row1.push(getLabel(q.type));
       });
 
-      // Baris 2: Detail Soal / Nama Kolom
       const row2 = [
         ...baseHeaders,
         ...filteredQuestions.map((q) => q.question_text),
       ];
-
-      // Gabungkan Baris Konten
       const matrixData = [row1, row2];
 
       dataset.forEach((r) => {
@@ -237,7 +232,6 @@ export default function ResultDashboard() {
       };
     };
 
-    // 1. Ambil data matriks untuk tiap-tiap lembar tab kerja
     const dataAll = generateSheetMatrix(respondents, [
       "politik",
       "industri",
@@ -253,13 +247,56 @@ export default function ResultDashboard() {
       ["industri", "skala", "suspicion"],
     );
 
-    // 2. Inisialisasi Dokumen Workbook SheetJS baru
     const wb = XLSX.utils.book_new();
 
     const appendSheet = (sheetName: string, sheetInfo: any) => {
       const ws = XLSX.utils.aoa_to_sheet(sheetInfo.matrixData);
 
-      // Logika Gabung Cell (Merge) Baris 1 agar rapi otomatis
+      // 1. Atur Lebar Kolom secara Spesifik (WCH)
+      const colWidths: any[] = [];
+      for (
+        let i = 0;
+        i < sheetInfo.colCount || sheetInfo.matrixData[1].length;
+        i++
+      ) {
+        if (i < sheetInfo.baseCount) {
+          // Kolom Data Diri diset proporsional sedang
+          if (i === 0)
+            colWidths.push({ wch: 15 }); // ID
+          else if (i === 1)
+            colWidths.push({ wch: 20 }); // Nama
+          else if (i === 10)
+            colWidths.push({ wch: 20 }); // Waktu Masuk
+          else colWidths.push({ wch: 13 }); // Lainnya
+        } else {
+          // Kolom Soal yang panjang diset Lebar 45 karakter agar menekuk ke bawah
+          colWidths.push({ wch: 45 });
+        }
+      }
+      ws["!cols"] = colWidths;
+
+      // 2. Terapkan Properti WRAP TEXT & ALIGNMENT pada Semua Cell yang memiliki isi
+      const range = XLSX.utils.decode_range(ws["!ref"] || "A1:A1");
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cell_address = { c: C, r: R };
+          const cell_ref = XLSX.utils.encode_cell(cell_address);
+
+          if (!ws[cell_ref]) continue;
+
+          // Inisialisasi objek style jika belum ada
+          if (!ws[cell_ref].s) ws[cell_ref].s = {};
+
+          // Berikan alignment rata atas (top) dan bungkus teks (wrapText)
+          ws[cell_ref].s.alignment = {
+            wrapText: true,
+            vertical: "top",
+            horizontal: R < 2 ? "center" : "left", // Header di tengah, isi di kiri
+          };
+        }
+      }
+
+      // 3. Logika Gabung Cell (Merge) Baris 1
       const merges = [
         { s: { r: 0, c: 0 }, e: { r: 0, c: sheetInfo.baseCount - 1 } },
       ];
@@ -279,7 +316,7 @@ export default function ResultDashboard() {
       let currentType = "";
       let startIdx = currentColIdx;
 
-      filteredQuestions.forEach((q, idx) => {
+      filteredQuestions.forEach((q) => {
         if (q.type !== currentType) {
           if (currentType !== "") {
             merges.push({
@@ -307,7 +344,6 @@ export default function ResultDashboard() {
     appendSheet("Kelompok Politik", dataPol);
     appendSheet("Kelompok Ekonomi", dataInd);
 
-    // 3. Konversi menjadi berkas biner .xlsx asli (Aman dari Security Block Microsoft)
     XLSX.writeFile(
       wb,
       `Rekap_Eksperimen_Skripsi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`,
