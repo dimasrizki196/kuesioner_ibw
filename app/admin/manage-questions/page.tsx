@@ -64,9 +64,12 @@ export default function ManageQuestions() {
     setTempOption("");
   };
 
-  const toggleCorrectAnswer = (index: number) => {
-    const updatedOptions = [...newQuestion.options];
-    updatedOptions[index].is_correct = !updatedOptions[index].is_correct;
+  // LOGIKA DIPERBAIKI: Memastikan hanya 1 jawaban yang bisa "Benar" (Single Choice)
+  const setCorrectAnswer = (index: number) => {
+    const updatedOptions = newQuestion.options.map((opt, i) => ({
+      ...opt,
+      is_correct: i === index, // Hanya opsi yang di-klik yang menjadi true
+    }));
     setNewQuestion({ ...newQuestion, options: updatedOptions });
   };
 
@@ -107,15 +110,11 @@ export default function ManageQuestions() {
     }
   }
 
-  // FUNGSI BARU: Eksekusi Penghapusan Soal
   const executeDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
 
     try {
-      // PERHATIAN: Pastikan di Supabase, foreign key 'answers.question_id' diset ke ON DELETE CASCADE.
-      // Jika tidak, kamu harus menghapus data di tabel 'answers' secara manual terlebih dahulu
-      // seperti pada fitur hapus responden.
       const { error } = await supabase
         .from("questions")
         .delete()
@@ -246,7 +245,6 @@ export default function ManageQuestions() {
                     )}
                 </div>
 
-                {/* Tombol Aksi */}
                 <div className="flex justify-end gap-2 border-t border-slate-800/60 pt-2.5 md:pt-3">
                   <button
                     onClick={() => openEditModal(q)}
@@ -383,37 +381,59 @@ export default function ManageQuestions() {
                     </button>
                   </div>
 
-                  <div className="space-y-1.5 md:space-y-2 mt-2 max-h-28 md:max-h-32 overflow-y-auto custom-scrollbar pr-1">
+                  {/* UI OPSI JAWABAN DIPERBAIKI UNTUK MOBILE */}
+                  <div className="space-y-2 md:space-y-2.5 mt-3 max-h-36 md:max-h-40 overflow-y-auto custom-scrollbar pr-1">
                     {newQuestion.options.map((opt, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between p-2 md:p-2.5 rounded-lg border border-slate-800 bg-slate-900/80"
+                        onClick={() => setCorrectAnswer(i)}
+                        className={`flex items-center justify-between p-3 md:p-3.5 rounded-xl border cursor-pointer transition-all ${
+                          opt.is_correct
+                            ? "bg-blue-600/10 border-blue-500 shadow-[0_0_10px_rgba(37,99,235,0.2)]"
+                            : "bg-slate-900 border-slate-700 hover:border-slate-500"
+                        }`}
                       >
-                        <label className="flex items-center gap-2.5 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="correct_option"
-                            checked={opt.is_correct}
-                            onChange={() => toggleCorrectAnswer(i)}
-                            className="w-3 h-3 md:w-3.5 md:h-3.5 accent-blue-500 cursor-pointer"
-                          />
+                        <div className="flex items-center gap-3">
+                          {/* Custom Radio Button */}
+                          <div
+                            className={`w-4 h-4 md:w-4 md:h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                              opt.is_correct
+                                ? "border-blue-500 bg-slate-900"
+                                : "border-slate-600 bg-slate-800"
+                            }`}
+                          >
+                            <div
+                              className={`w-2 h-2 rounded-full transition-all ${
+                                opt.is_correct
+                                  ? "bg-blue-500 scale-100"
+                                  : "bg-transparent scale-0"
+                              }`}
+                            />
+                          </div>
+
                           <span
-                            className={`text-[10px] md:text-xs font-bold ${opt.is_correct ? "text-blue-400" : "text-slate-400"}`}
+                            className={`text-xs md:text-sm font-bold ${
+                              opt.is_correct
+                                ? "text-blue-400"
+                                : "text-slate-300"
+                            }`}
                           >
                             {opt.text}
                           </span>
-                        </label>
+                        </div>
+
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={(e) => {
+                            e.stopPropagation(); // Mencegah setCorrectAnswer terpanggil saat menghapus opsi
                             setNewQuestion({
                               ...newQuestion,
                               options: newQuestion.options.filter(
                                 (_, idx) => idx !== i,
                               ),
-                            })
-                          }
-                          className="text-slate-500 hover:text-red-400 text-xs px-2"
+                            });
+                          }}
+                          className="text-slate-500 hover:text-red-400 text-sm px-2 py-1 transition-colors"
                         >
                           ✕
                         </button>
