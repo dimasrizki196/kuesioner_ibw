@@ -91,126 +91,173 @@ export default function Step2Identitas() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center p-4 md:p-10 overflow-x-hidden font-serif selection:bg-blue-500/20">
-      {/* BACKGROUND DEEP SPACE PURE CODING */}
-      <div className="fixed inset-0 z-0 bg-[#000105]">
-        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-10"></div>
-        <div className="absolute -top-1/4 -right-1/4 w-[60vh] h-[60vh] bg-sky-950 rounded-full blur-[120px] opacity-25"></div>
-        <div className="absolute -bottom-1/4 -left-1/4 w-[60vh] h-[60vh] bg-indigo-950 rounded-full blur-[120px] opacity-25"></div>
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
+    <div className="relative min-h-screen w-full flex items-center justify-center p-4 md:p-8 overflow-x-hidden selection:bg-blue-500/20 font-serif">
+      {/* BACKGROUND DEEP SPACE NAVY X WARM COFFEE GLOW (KONSISTEN STEP 1) */}
+      <div className="fixed inset-0 z-0 bg-[#020514] overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(#334155_1.2px,transparent_1.2px)] [background-size:24px_24px] opacity-20"></div>
+        <div className="absolute -top-1/4 -right-1/4 w-[75vh] h-[75vh] bg-sky-600 rounded-full blur-[140px] opacity-20 mix-blend-screen"></div>
+        <div className="absolute -bottom-1/4 -left-1/4 w-[80vh] h-[80vh] bg-gradient-to-tr from-amber-700 via-orange-900 to-transparent rounded-full blur-[130px] opacity-25 mix-blend-screen"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vh] h-[60vh] bg-yellow-950/20 rounded-full blur-[120px]"></div>
+
+        {/* Biji Kopi CSS */}
+        <div className="absolute top-0 right-0 w-full md:w-1/2 h-full pointer-events-none">
+          <div className="absolute top-[20%] right-[12%] w-16 h-24 bg-[#3d251e] rounded-[50%] rotate-45 opacity-40 blur-[2px] shadow-2xl">
+            <div className="absolute top-[5%] left-1/2 w-[2px] h-[90%] bg-[#1a0f0c] -translate-x-1/2 rounded-full" />
+          </div>
+          <div className="absolute top-[55%] right-[22%] w-12 h-16 bg-[#4e342e] rounded-[50%] -rotate-12 opacity-30 blur-[1px]">
+            <div className="absolute top-[5%] left-1/2 w-[2px] h-[90%] bg-[#1a0f0c] -translate-x-1/2 rounded-full" />
+          </div>
+          <div className="absolute bottom-[15%] right-[8%] w-24 h-32 bg-[#2b1814] rounded-[50%] rotate-[110deg] opacity-50 drop-shadow-2xl">
+            <div className="absolute top-[5%] left-1/2 w-[3px] h-[90%] bg-[#1a0f0c] -translate-x-1/2 rounded-full" />
+          </div>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/60 to-amber-950/20 backdrop-blur-[1px]"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-lg md:max-w-5xl my-auto animate-in fade-in zoom-in-95 duration-700">
+      {/* CONTAINER UTAMA / MODAL */}
+      <div className="relative z-10 w-full max-w-5xl h-full md:h-[85vh] my-auto animate-in fade-in zoom-in-95 duration-700">
         {/* KARTU DARK GLASS */}
-        <div className="bg-slate-950/40 backdrop-blur-3xl border border-slate-800 rounded-[40px] shadow-[0_0_60px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col md:flex-row h-full md:max-h-[750px]">
-          {/* --- SIDEBAR --- */}
-          <div className="w-full md:w-[35%] bg-[#080c1d]/80 p-8 md:p-12 text-white flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-700">
-            <div>
+        <div className="bg-slate-950/50 backdrop-blur-3xl border border-slate-800/80 rounded-[32px] md:rounded-[48px] shadow-2xl overflow-hidden flex flex-col md:flex-row h-full">
+          {/* --- SIDEBAR PROGRESS --- */}
+          <div className="w-full md:w-[32%] bg-[#080c1d]/90 p-8 md:p-12 text-slate-100 flex flex-col justify-between shrink-0 border-b md:border-b-0 md:border-r border-slate-800/80">
+            <div className="space-y-4 md:space-y-6">
               <button
                 onClick={() => router.back()}
-                className="mb-8 flex items-center gap-2 text-[9px] font-black uppercase text-blue-400/60 tracking-[0.3em] hover:text-white transition-colors font-serif"
+                className="mb-2 flex items-center gap-2 text-[9px] font-sans font-black uppercase text-blue-400/60 tracking-[0.3em] hover:text-white transition-colors w-fit"
               >
                 ← Kembali
               </button>
-              <div className="inline-block px-3 py-1 rounded-full bg-blue-950/30 border border-blue-800 text-blue-400 text-[10px] font-black uppercase tracking-[0.4em] mb-6 font-serif">
-                Step 02/05
+
+              {/* Indikator Step */}
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-900/20 border border-blue-800/50 shadow-inner w-fit">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                <span className="text-blue-300 font-sans text-[10px] font-black uppercase tracking-[0.3em]">
+                  Step 02/06
+                </span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-black leading-none italic mb-4 font-serif drop-shadow-lg text-white">
-                IDENTITAS
-                <br />
-                RESPONDEN
-              </h1>
-              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest leading-relaxed font-serif">
-                Data Anda dilindungi enkripsi
-              </p>
+
+              <div>
+                <h1 className="text-3xl md:text-4xl font-black leading-[1.1] tracking-tight mb-3 italic drop-shadow-md text-white">
+                  IDENTITAS <br />
+                  RESPONDEN
+                </h1>
+                <p className="text-slate-400 text-xs font-bold tracking-widest leading-relaxed">
+                  Data Anda dilindungi kerahasiaannya dan hanya digunakan untuk
+                  keperluan penelitian ini.
+                </p>
+              </div>
             </div>
 
-            <p className="hidden md:block text-[11px] text-blue-200/50 italic leading-relaxed pt-8 border-t border-slate-700 font-serif">
-              *Informasi ini diperlukan untuk memastikan kriteria partisipan
-              terpenuhi sesuai kelayakan etik.
-            </p>
+            <div className="hidden md:block mt-8 pt-8 border-t border-slate-800/60">
+              <p className="text-[11px] text-blue-200/50 italic leading-relaxed">
+                *Informasi ini diperlukan untuk memastikan kriteria partisipan
+                terpenuhi sesuai standar kelayakan etik akademik.
+              </p>
+            </div>
           </div>
 
-          {/* --- FORM AREA --- */}
-          <div className="flex-1 flex flex-col min-h-0 bg-transparent font-serif">
+          {/* --- FORM AREA (SCROLLABLE) --- */}
+          <div className="flex-1 flex flex-col min-h-0 bg-transparent">
             <form
               onSubmit={handleSubmit}
               className="flex-1 flex flex-col justify-between h-full"
             >
-              <div className="flex-1 overflow-y-auto p-6 md:p-12 space-y-6 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-6 md:p-12 space-y-6 custom-scrollbar scroll-smooth">
                 {/* Nama/Inisial */}
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em] ml-2 font-serif">
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-sans font-black text-blue-400 uppercase tracking-[0.2em] ml-2">
                     Inisial / Nama Singkat
                   </label>
                   <input
                     type="text"
-                    className={`w-full p-4 bg-slate-900/50 border border-slate-700 rounded-[20px] focus:bg-slate-800 focus:border-blue-500 outline-none transition-all text-white text-sm font-bold placeholder:text-slate-600 font-serif ${errors.name ? "border-red-500/50" : ""}`}
-                    placeholder="Contoh: IBW"
+                    className={`w-full p-4 bg-slate-900/40 border rounded-2xl focus:bg-slate-800/80 focus:border-blue-500 outline-none transition-all duration-300 text-white text-sm font-sans font-bold placeholder:text-slate-600 placeholder:font-normal ${errors.name ? "border-red-500/50" : "border-slate-700/80"}`}
+                    placeholder="Contoh: Iqbal Bhayu Wicaksono / IBW"
                     value={formData.name}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
                   />
                   {errors.name && (
-                    <p className="text-[10px] text-red-400 font-bold ml-2 italic font-serif">
+                    <p className="text-[10px] text-red-400 font-sans font-bold ml-2 italic animate-in fade-in slide-in-from-top-1">
                       {errors.name}
                     </p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Usia */}
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em] ml-2 font-serif">
-                      Usia (18-25)
+                  <div className="space-y-2.5">
+                    <label className="text-[10px] font-sans font-black text-blue-400 uppercase tracking-[0.2em] ml-2">
+                      Usia{" "}
+                      <span className="text-slate-500 lowercase">(18-25)</span>
                     </label>
                     <input
                       type="number"
-                      className={`w-full p-4 bg-slate-900/50 border border-slate-700 rounded-[20px] focus:bg-slate-800 focus:border-blue-500 outline-none transition-all text-white text-sm font-bold placeholder:text-slate-600 font-serif ${errors.age ? "border-red-500/50" : ""}`}
-                      placeholder="20"
+                      className={`w-full p-4 bg-slate-900/40 border rounded-2xl focus:bg-slate-800/80 focus:border-blue-500 outline-none transition-all duration-300 text-white text-sm font-sans font-bold placeholder:text-slate-600 placeholder:font-normal ${errors.age ? "border-red-500/50" : "border-slate-700/80"}`}
+                      placeholder="Contoh: 20"
                       value={formData.age}
                       onChange={(e) =>
                         setFormData({ ...formData, age: e.target.value })
                       }
                     />
                     {errors.age && (
-                      <p className="text-[10px] text-red-400 font-bold ml-2 italic font-serif">
+                      <p className="text-[10px] text-red-400 font-sans font-bold ml-2 italic animate-in fade-in slide-in-from-top-1">
                         {errors.age}
                       </p>
                     )}
                   </div>
 
                   {/* Jenis Kelamin */}
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em] ml-2 font-serif">
+                  <div className="space-y-2.5">
+                    <label className="text-[10px] font-sans font-black text-blue-400 uppercase tracking-[0.2em] ml-2">
                       Jenis Kelamin
                     </label>
-                    <select
-                      className={`w-full p-4 bg-slate-900/50 border border-slate-700 rounded-[20px] focus:bg-slate-800 focus:border-blue-500 outline-none transition-all text-white text-sm font-bold appearance-none cursor-pointer font-serif ${errors.gender ? "border-red-500/50" : ""}`}
-                      value={formData.gender}
-                      onChange={(e) =>
-                        setFormData({ ...formData, gender: e.target.value })
-                      }
-                    >
-                      <option value="" className="text-slate-500 font-serif">
-                        Pilih
-                      </option>
-                      <option
-                        value="Laki-laki"
-                        className="text-black font-serif"
+                    <div className="relative">
+                      <select
+                        className={`w-full p-4 bg-slate-900/40 border rounded-2xl focus:bg-slate-800/80 focus:border-blue-500 outline-none transition-all duration-300 text-white text-sm font-sans font-bold appearance-none cursor-pointer ${errors.gender ? "border-red-500/50" : "border-slate-700/80"}`}
+                        value={formData.gender}
+                        onChange={(e) =>
+                          setFormData({ ...formData, gender: e.target.value })
+                        }
                       >
-                        Laki-laki
-                      </option>
-                      <option
-                        value="Perempuan"
-                        className="text-black font-serif"
-                      >
-                        Perempuan
-                      </option>
-                    </select>
+                        <option
+                          value=""
+                          disabled
+                          className="bg-slate-900 text-slate-500"
+                        >
+                          Pilih...
+                        </option>
+                        <option
+                          value="Laki-laki"
+                          className="bg-slate-900 text-white"
+                        >
+                          Laki-laki
+                        </option>
+                        <option
+                          value="Perempuan"
+                          className="bg-slate-900 text-white"
+                        >
+                          Perempuan
+                        </option>
+                      </select>
+                      <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                        <svg
+                          className="w-4 h-4 text-slate-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </div>
+                    </div>
                     {errors.gender && (
-                      <p className="text-[10px] text-red-400 font-bold ml-2 italic font-serif">
+                      <p className="text-[10px] text-red-400 font-sans font-bold ml-2 italic animate-in fade-in slide-in-from-top-1">
                         {errors.gender}
                       </p>
                     )}
@@ -218,13 +265,14 @@ export default function Step2Identitas() {
                 </div>
 
                 {/* Domisili */}
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em] ml-2 font-serif">
-                    Domisili (Kota/Kab)
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-sans font-black text-blue-400 uppercase tracking-[0.2em] ml-2">
+                    Domisili{" "}
+                    <span className="text-slate-500 lowercase">(Kota/Kab)</span>
                   </label>
                   <input
                     type="text"
-                    className={`w-full p-4 bg-slate-900/50 border border-slate-700 rounded-[20px] focus:bg-slate-800 focus:border-blue-500 outline-none transition-all text-white text-sm font-bold placeholder:text-slate-600 font-serif ${errors.domicile ? "border-red-500/50" : ""}`}
+                    className={`w-full p-4 bg-slate-900/40 border rounded-2xl focus:bg-slate-800/80 focus:border-blue-500 outline-none transition-all duration-300 text-white text-sm font-sans font-bold placeholder:text-slate-600 placeholder:font-normal ${errors.domicile ? "border-red-500/50" : "border-slate-700/80"}`}
                     placeholder="Contoh: Surakarta"
                     value={formData.domicile}
                     onChange={(e) =>
@@ -232,21 +280,21 @@ export default function Step2Identitas() {
                     }
                   />
                   {errors.domicile && (
-                    <p className="text-[10px] text-red-400 font-bold ml-2 italic font-serif">
+                    <p className="text-[10px] text-red-400 font-sans font-bold ml-2 italic animate-in fade-in slide-in-from-top-1">
                       {errors.domicile}
                     </p>
                   )}
                 </div>
 
                 {/* Pendidikan Terakhir */}
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em] ml-2 font-serif">
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-sans font-black text-blue-400 uppercase tracking-[0.2em] ml-2">
                     Pendidikan Terakhir
                   </label>
                   <input
                     type="text"
-                    className={`w-full p-4 bg-slate-900/50 border border-slate-700 rounded-[20px] focus:bg-slate-800 focus:border-blue-500 outline-none transition-all text-white text-sm font-bold placeholder:text-slate-600 font-serif ${errors.last_education ? "border-red-500/50" : ""}`}
-                    placeholder="Contoh: SMA, S1 Psikologi, dll."
+                    className={`w-full p-4 bg-slate-900/40 border rounded-2xl focus:bg-slate-800/80 focus:border-blue-500 outline-none transition-all duration-300 text-white text-sm font-sans font-bold placeholder:text-slate-600 placeholder:font-normal ${errors.last_education ? "border-red-500/50" : "border-slate-700/80"}`}
+                    placeholder="Contoh: S1 Psikologi"
                     value={formData.last_education}
                     onChange={(e) =>
                       setFormData({
@@ -256,70 +304,55 @@ export default function Step2Identitas() {
                     }
                   />
                   {errors.last_education && (
-                    <p className="text-[10px] text-red-400 font-bold ml-2 italic font-serif">
+                    <p className="text-[10px] text-red-400 font-sans font-bold ml-2 italic animate-in fade-in slide-in-from-top-1">
                       {errors.last_education}
                     </p>
                   )}
                 </div>
 
                 {/* No WhatsApp (Opsional) */}
-                <div className="space-y-2">
+                <div className="space-y-2.5 pb-4">
                   <div className="flex justify-between items-end ml-2">
-                    <label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em] font-serif">
+                    <label className="text-[10px] font-sans font-black text-blue-400 uppercase tracking-[0.2em]">
                       Nomor WhatsApp
                     </label>
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mr-2 border border-slate-700 px-2 py-0.5 rounded-full font-serif">
+                    <span className="text-[8px] font-sans font-black text-amber-500/80 bg-amber-500/10 uppercase tracking-widest mr-2 border border-amber-500/20 px-2 py-0.5 rounded-full">
                       Opsional
                     </span>
                   </div>
                   <input
                     type="tel"
-                    className={`w-full p-4 bg-slate-900/50 border border-slate-700 rounded-[20px] focus:bg-slate-800 focus:border-blue-500 outline-none transition-all text-white text-sm font-bold placeholder:text-slate-600 font-serif ${errors.phone ? "border-red-500/50" : ""}`}
-                    placeholder="0812XXXXXXXX"
+                    className={`w-full p-4 bg-slate-900/40 border rounded-2xl focus:bg-slate-800/80 focus:border-blue-500 outline-none transition-all duration-300 text-white text-sm font-sans font-bold placeholder:text-slate-600 placeholder:font-normal ${errors.phone ? "border-red-500/50" : "border-slate-700/80"}`}
+                    placeholder="Contoh: 0812XXXXXXXX"
                     value={formData.phone}
                     onChange={(e) =>
                       setFormData({ ...formData, phone: e.target.value })
                     }
                   />
                   {errors.phone && (
-                    <p className="text-[10px] text-red-400 font-bold ml-2 italic font-serif">
+                    <p className="text-[10px] text-red-400 font-sans font-bold ml-2 italic animate-in fade-in slide-in-from-top-1">
                       {errors.phone}
                     </p>
                   )}
                 </div>
               </div>
 
-              {/* ACTION BUTTON */}
-              <div className="p-8 md:p-12 bg-black/60 border-t border-slate-800 shrink-0">
+              {/* ACTION FOOTER */}
+              <div className="p-6 md:p-10 bg-black/40 border-t border-slate-800/80 shrink-0 backdrop-blur-md">
                 <button
                   type="submit"
-                  className="group relative w-full py-6 bg-white text-black rounded-[28px] font-black uppercase tracking-[0.4em] text-[11px] shadow-2xl transition-all active:scale-95 overflow-hidden font-serif"
+                  className="group relative w-full py-5 bg-white text-black rounded-[24px] font-sans font-black uppercase tracking-[0.4em] text-[10px] md:text-[11px] shadow-2xl transition-all active:scale-[0.98] overflow-hidden flex items-center justify-center gap-2"
                 >
-                  <span className="relative z-10 italic font-serif">
+                  <span className="relative z-10 italic">
                     Simpan & Lanjutkan
                   </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-600/20 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
                 </button>
               </div>
             </form>
           </div>
         </div>
       </div>
-
-      <style jsx global>{`
-        @keyframes shimmer {
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 5px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 10px;
-        }
-      `}</style>
     </div>
   );
 }

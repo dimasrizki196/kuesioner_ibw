@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #02040a; /* Default hitam space */
+  --background: #0a0a0a; /* Disamakan dengan bg dasar Landing Page */
   --foreground: #ffffff;
   --font-tnr: "Times New Roman", Times, serif;
 }
@@ -20,39 +20,61 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   margin: 0;
-}
-
-/* --- TEMA GLOBAL NEBULA --- */
-.nebula-theme {
-  position: relative;
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow-x: hidden;
 }
 
-/* Background Nebula Global */
-.nebula-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background-image: url("/images/nebula-bg.jpg"); /* Pastikan file ada di public/images/ */
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+/* =========================================
+   ANIMASI GLOBAL (UNTUK SELURUH HALAMAN)
+   ========================================= */
+
+/* 1. Animasi Kilau Bintang (Landing Page) */
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+.animate-sparkle {
+  animation: sparkle 3s ease-in-out infinite;
 }
 
-/* Overlay Gelap agar Teks TNR Tajam */
-.nebula-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
+/* 2. Animasi Garis Centang SVG (Step 6) */
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
-/* Glassmorphism Card Style */
+/* 3. Animasi Efek Kilap Tombol / Shimmer (Step 5 & 6) */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* =========================================
+   KOMPONEN & UTILITY GLOBAL
+   ========================================= */
+
+/* Custom Scrollbar Elegan & Tipis untuk Area Kuesioner */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Glassmorphism Card Style (Siap pakai jika butuh di halaman lain) */
 .glass-card {
   background: rgba(12, 12, 12, 0.65);
   backdrop-filter: blur(30px);
@@ -61,19 +83,35 @@ body {
   border-radius: 45px;
 }
 
-/* Custom Scrollbar untuk Tema Gelap */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-}
-
-/* Input & Button Global Force TNR */
+/* Memaksa elemen form menggunakan font default (TNR) */
 input,
 button,
 textarea,
 select {
   font-family: var(--font-tnr) !important;
+}
+
+/* --- TEMA GLOBAL NEBULA (Fallback jika menggunakan gambar) --- */
+.nebula-theme {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nebula-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: url("/images/nebula-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.nebula-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
 }
