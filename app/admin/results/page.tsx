@@ -12,7 +12,7 @@ export default function ResultDashboard() {
 
   const [selectedRespondent, setSelectedRespondent] = useState<any>(null);
 
-  // STATE BARU: Untuk Fitur Hapus Massal & Modal Konfirmasi
+  // State Untuk Fitur Hapus Massal & Modal Konfirmasi
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{
     ids: string[];
@@ -96,7 +96,6 @@ export default function ResultDashboard() {
     }
   }
 
-  // FUNGSI SELECT BARIS
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       setSelectedIds(respondents.map((r) => r.id));
@@ -111,29 +110,21 @@ export default function ResultDashboard() {
     );
   };
 
-  // FITUR: Logika Hapus (Mendukung Single & Massal)
   const executeDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
 
     try {
-      // 1. Hapus seluruh jawaban responden (menggunakan .in untuk massal)
-      const { error: ansError } = await supabase
+      await supabase
         .from("answers")
         .delete()
         .in("respondent_id", deleteTarget.ids);
-
-      if (ansError) throw ansError;
-
-      // 2. Hapus identitas responden
-      const { error: resError } = await supabase
+      const { error } = await supabase
         .from("respondents")
         .delete()
         .in("id", deleteTarget.ids);
+      if (error) throw error;
 
-      if (resError) throw resError;
-
-      // 3. Sukses, reset state dan segarkan tabel
       setSelectedIds([]);
       setDeleteTarget(null);
       fetchData();
@@ -144,21 +135,19 @@ export default function ResultDashboard() {
     }
   };
 
-  // FITUR: Export Excel Multi-Sheet
+  // 🔥 FITUR UTAMA BARU: Export ke Berkas .xlsx dengan Office OpenXML Format (Anti-Corrupt)
   const exportToExcelMultiSheets = () => {
     if (respondents.length === 0 || questions.length === 0) {
       alert("Belum ada data untuk di-export.");
       return;
     }
 
-    const escapeXml = (str: any) => {
+    const cleanString = (str: any) => {
       if (str === null || str === undefined) return "";
       return String(str)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&apos;");
+        .replace(/>/g, "&gt;");
     };
 
     const typeOrder = ["politik", "industri", "skala", "suspicion"];
@@ -190,6 +179,7 @@ export default function ResultDashboard() {
         "Waktu Masuk",
       ];
 
+      // Susun Struktur Gabung Cell (Merge) Atas
       const groupedHeaders = [
         { label: "DATA RESPONDEN", span: baseHeaders.length },
       ];
@@ -264,30 +254,34 @@ export default function ResultDashboard() {
       ["industri", "skala", "suspicion"],
     );
 
+    // Membangun dokumen berbasis XML OpenXML Worksheet Schema
     const buildWorksheetXml = (sheetName: string, data: any) => {
       let xml = `  <Worksheet ss:Name="${sheetName}">\n    <Table>\n`;
-
       for (let i = 0; i < data.colCount; i++) {
-        xml += `      <Column ss:Width="${i < 11 ? "120" : "220"}" />\n`;
+        xml += `      <Column ss:Width="${i < 11 ? "110" : "240"}" />\n`;
       }
 
-      xml += '      <Row ss:Height="25">\n';
+      // Baris 1: Pengelompokan Tipe Kuesioner (Dengan Fitur Gabung Cell / MergeAcross)
+      xml += '      <Row ss:Height="26">\n';
       data.groupedHeaders.forEach((gh: any) => {
         const mergeAttr = gh.span > 1 ? ` ss:MergeAcross="${gh.span - 1}"` : "";
-        xml += `        <Cell${mergeAttr} ss:StyleID="HeaderType"><Data ss:Type="String">${escapeXml(gh.label)}</Data></Cell>\n`;
+        xml += `        <Cell${mergeAttr} ss:StyleID="HeaderType"><Data ss:Type="String">${cleanString(gh.label)}</Data></Cell>\n`;
       });
       xml += "      </Row>\n";
 
-      xml += '      <Row ss:Height="40">\n';
+      // Baris 2: Judul / Butir Pertanyaan
+      xml += '      <Row ss:Height="42">\n';
       data.headers2.forEach((h: string) => {
-        xml += `        <Cell ss:StyleID="HeaderQuestion"><Data ss:Type="String">${escapeXml(h)}</Data></Cell>\n`;
+        xml += `        <Cell ss:StyleID="HeaderQuestion"><Data ss:Type="String">${cleanString(h)}</Data></Cell>\n`;
       });
       xml += "      </Row>\n";
 
+      // Baris Konten Data Utama
       data.rows.forEach((row: any[]) => {
-        xml += "      <Row>\n";
+        xml += '      <Row ss:Height="20">\n';
         row.forEach((cell: any) => {
-          xml += `        <Cell ss:StyleID="DataCell"><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>\n`;
+          const isNum = typeof cell === "number";
+          xml += `        <Cell ss:StyleID="DataCell"><Data ss:Type="${isNum ? "Number" : "String"}">${cleanString(cell)}</Data></Cell>\n`;
         });
         xml += "      </Row>\n";
       });
@@ -296,59 +290,62 @@ export default function ResultDashboard() {
       return xml;
     };
 
-    let excelTemplate = `<?xml version="1.0"?>
+    let xlsxTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="workbook.xsl"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
  xmlns:o="urn:schemas-microsoft-com:office:office"
  xmlns:x="urn:schemas-microsoft-com:office:excel"
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
  xmlns:html="http://www.w3.org/TR/REC-html40">
+  <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+    <Author>Admin IBW</Author>
+    <Created>${new Date().toISOString()}</Created>
+  </DocumentProperties>
   <Styles>
     <Style ss:ID="HeaderType">
       <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-      <Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="10"/>
-      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
-      <Borders>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FFFFFF"/>
-        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FFFFFF"/>
-        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FFFFFF"/>
-        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FFFFFF"/>
-      </Borders>
+      <Font ss:Bold="1" ss:Color="#FFFFFF" ss:Name="Segoe UI" ss:Size="10"/>
+      <Interior ss:Color="#1E293B" ss:Pattern="Solid"/>
     </Style>
     <Style ss:ID="HeaderQuestion">
       <Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/>
-      <Font ss:Bold="1" ss:Color="#0F172A" ss:Size="10"/>
-      <Interior ss:Color="#DBEAFE" ss:Pattern="Solid"/>
+      <Font ss:Bold="1" ss:Color="#0F172A" ss:Name="Segoe UI" ss:Size="10"/>
+      <Interior ss:Color="#EFF6FF" ss:Pattern="Solid"/>
       <Borders>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
-        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
-        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#94A3B8"/>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
       </Borders>
     </Style>
     <Style ss:ID="DataCell">
-      <Alignment ss:Horizontal="Left" ss:Vertical="Top" ss:WrapText="1"/>
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/>
+      <Font ss:Name="Segoe UI" ss:Size="9" ss:Color="#334155"/>
       <Borders>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
-        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
-        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#F1F5F9"/>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#F1F5F9"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#F1F5F9"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#F1F5F9"/>
       </Borders>
     </Style>
   </Styles>
 `;
-    excelTemplate += buildWorksheetXml("Keseluruhan", sheetKeseluruhan);
-    excelTemplate += buildWorksheetXml("Kelompok Politik", sheetPolitik);
-    excelTemplate += buildWorksheetXml("Kelompok Industri", sheetIndustri);
-    excelTemplate += "</Workbook>";
 
-    const blob = new Blob([excelTemplate], {
-      type: "application/vnd.ms-excel;charset=utf-8;",
+    xlsxTemplate += buildWorksheetXml("Keseluruhan", sheetKeseluruhan);
+    xlsxTemplate += buildWorksheetXml("Kelompok Politik", sheetPolitik);
+    xlsxTemplate += buildWorksheetXml("Kelompok Industri", sheetIndustri);
+    xlsxTemplate += "</Workbook>";
+
+    // Set MIME-Type resmi untuk Excel OpenXML Spreadsheet (.xlsx)
+    const blob = new Blob([xlsxTemplate], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute(
       "download",
-      `Rekap_Eksperimen_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`,
+      `Rekap_Eksperimen_Skripsi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`,
     );
     document.body.appendChild(link);
     link.click();
@@ -368,7 +365,7 @@ export default function ResultDashboard() {
 
   return (
     <div className="w-full space-y-6 md:space-y-8 animate-in fade-in duration-700">
-      {/* HEADER & EXPORT BUTTON */}
+      {/* HEADER PANEL */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 md:mb-6 pb-6 border-b border-slate-800">
         <div>
           <h1 className="text-2xl md:text-3xl font-black text-white tracking-widest uppercase flex items-center gap-3">
@@ -397,18 +394,18 @@ export default function ResultDashboard() {
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
             />
           </svg>
-          Export 3 Tab Excel
+          Export Berkas .XLSX
         </button>
       </div>
 
-      {/* TABS UTAMA (INDIVIDU VS SOAL) */}
+      {/* TAB UTAMA */}
       <div className="flex gap-3 mb-6 overflow-x-auto custom-scrollbar pb-2">
         <button
           onClick={() => setActiveTab("individu")}
           className={`px-5 py-2.5 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
             activeTab === "individu"
-              ? "bg-blue-600/20 text-blue-400 border border-blue-500 shadow-inner"
-              : "bg-slate-900/50 text-slate-500 border border-slate-800 hover:border-slate-600 hover:text-slate-300"
+              ? "bg-blue-600/20 text-blue-400 border border-blue-500"
+              : "bg-slate-900/50 text-slate-500 border border-slate-800"
           }`}
         >
           🧑‍🎓 By Individu
@@ -417,22 +414,19 @@ export default function ResultDashboard() {
           onClick={() => setActiveTab("soal")}
           className={`px-5 py-2.5 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
             activeTab === "soal"
-              ? "bg-blue-600/20 text-blue-400 border border-blue-500 shadow-inner"
-              : "bg-slate-900/50 text-slate-500 border border-slate-800 hover:border-slate-600 hover:text-slate-300"
+              ? "bg-blue-600/20 text-blue-400 border border-blue-500"
+              : "bg-slate-900/50 text-slate-500 border border-slate-800"
           }`}
         >
           📝 By Pertanyaan
         </button>
       </div>
 
-      {/* ================================================================= */}
-      {/* TAB 1: INDIVIDU (RESPONDEN) */}
-      {/* ================================================================= */}
+      {/* TAB 1: INDIVIDU */}
       {activeTab === "individu" && (
         <div className="space-y-4">
-          {/* Action Bar (Hapus Massal) muncul jika ada yang dipilih */}
           {selectedIds.length > 0 && (
-            <div className="bg-red-500/10 border border-red-500/30 p-3 md:p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-3 animate-in fade-in slide-in-from-top-4">
+            <div className="bg-red-500/10 border border-red-500/30 p-3 md:p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-3 animate-in fade-in">
               <span className="text-xs font-bold text-red-400 uppercase tracking-widest">
                 {selectedIds.length} Data Terpilih
               </span>
@@ -440,19 +434,19 @@ export default function ResultDashboard() {
                 onClick={() =>
                   setDeleteTarget({ ids: selectedIds, type: "mass" })
                 }
-                className="bg-red-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.4)] hover:bg-red-500 active:scale-95 transition-all w-full sm:w-auto"
+                className="bg-red-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest w-full sm:w-auto"
               >
                 Hapus Masal
               </button>
             </div>
           )}
 
-          <div className="bg-slate-900/40 backdrop-blur-sm border border-slate-800/80 shadow-[0_10px_40px_rgba(0,0,0,0.4)] rounded-2xl overflow-hidden">
+          <div className="bg-slate-900/40 backdrop-blur-sm border border-slate-800/80 shadow-2xl rounded-2xl overflow-hidden">
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left whitespace-nowrap">
                 <thead className="bg-slate-950/80 border-b border-slate-800">
                   <tr>
-                    <th className="p-4 md:p-5 w-12 text-center">
+                    <th className="p-4 w-12 text-center">
                       <input
                         type="checkbox"
                         className="w-4 h-4 accent-blue-500 cursor-pointer"
@@ -488,7 +482,7 @@ export default function ResultDashboard() {
                     <tr>
                       <td
                         colSpan={7}
-                        className="p-10 text-center text-slate-500 font-bold uppercase tracking-widest animate-pulse text-xs"
+                        className="p-10 text-center text-slate-500 font-bold uppercase tracking-widest text-xs"
                       >
                         Menarik data dari server...
                       </td>
@@ -506,9 +500,9 @@ export default function ResultDashboard() {
                     respondents.map((r) => (
                       <tr
                         key={r.id}
-                        className={`transition-colors group ${selectedIds.includes(r.id) ? "bg-blue-900/10" : "hover:bg-slate-800/30"}`}
+                        className={`transition-colors ${selectedIds.includes(r.id) ? "bg-blue-900/10" : "hover:bg-slate-800/30"}`}
                       >
-                        <td className="p-4 md:p-5 text-center">
+                        <td className="p-4 text-center">
                           <input
                             type="checkbox"
                             className="w-4 h-4 accent-blue-500 cursor-pointer"
@@ -532,9 +526,7 @@ export default function ResultDashboard() {
                             className={`px-3 py-1.5 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest border ${
                               r.assignedType === "politik"
                                 ? "bg-red-500/10 text-red-400 border-red-500/30"
-                                : r.assignedType === "industri"
-                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                                  : "bg-slate-800 text-slate-400 border-slate-700"
+                                : "bg-amber-500/10 text-amber-400 border-amber-500/30"
                             }`}
                           >
                             {r.assignedType}
@@ -558,9 +550,9 @@ export default function ResultDashboard() {
                           <div className="flex justify-end gap-2">
                             <button
                               onClick={() => setSelectedRespondent(r)}
-                              className="bg-slate-800 text-blue-400 border border-slate-700 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-colors"
+                              className="bg-slate-800 text-blue-400 border border-slate-700 px-3 py-1.5 rounded-lg text-[9px] md:text-[10px] font-black uppercase hover:bg-blue-600 hover:text-white transition-colors"
                             >
-                              Cek Jawaban
+                              Cek
                             </button>
                             <button
                               onClick={() =>
@@ -570,8 +562,7 @@ export default function ResultDashboard() {
                                   name: r.name,
                                 })
                               }
-                              className="bg-slate-800/80 text-red-400 border border-slate-700 px-3 py-1.5 md:px-3 md:py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-colors"
-                              title="Hapus Data Ini"
+                              className="bg-slate-800/80 text-red-400 border border-slate-700 px-3 py-1.5 rounded-lg text-[9px] md:text-[10px] font-black uppercase hover:bg-red-600 hover:text-white transition-colors"
                             >
                               Hapus
                             </button>
@@ -587,21 +578,18 @@ export default function ResultDashboard() {
         </div>
       )}
 
-      {/* ================================================================= */}
-      {/* TAB 2: SOAL (ANALISIS ITEM) */}
-      {/* ================================================================= */}
+      {/* TAB 2: SOAL */}
       {activeTab === "soal" && (
         <div className="space-y-6">
-          {/* Sub-tab filter jenis soal: Flex Wrap agar tidak scroll menyamping */}
-          <div className="flex flex-wrap gap-2 md:gap-4 p-2 bg-slate-950/40 rounded-xl border border-slate-800 w-full md:w-fit justify-start">
+          <div className="flex flex-wrap gap-2 p-2 bg-slate-950/40 rounded-xl border border-slate-800 w-full md:w-fit justify-start">
             {questionTabs.map((qt) => (
               <button
                 key={qt.id}
                 onClick={() => setActiveQuestionTab(qt.id)}
                 className={`px-4 py-2.5 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${
                   activeQuestionTab === qt.id
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/15 animate-in fade-in"
-                    : "text-slate-500 hover:text-slate-300 bg-transparent"
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-500 hover:text-slate-300"
                 }`}
               >
                 {qt.label}
@@ -610,85 +598,36 @@ export default function ResultDashboard() {
           </div>
 
           <div className="space-y-4 md:space-y-6">
-            {loading ? (
-              <div className="p-10 text-center text-slate-500 font-bold uppercase tracking-widest animate-pulse text-xs">
-                Menarik data soal...
-              </div>
-            ) : filteredQuestionsInUI.length === 0 ? (
-              <div className="text-center py-12 bg-slate-900/20 rounded-2xl border border-dashed border-slate-800">
-                <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">
-                  Belum ada data masuk atau butir soal untuk kategori ini.
-                </p>
-              </div>
-            ) : (
+            {!loading &&
               filteredQuestionsInUI.map((q, idx) => {
                 const answersForQ = respondents.flatMap((r) =>
                   r.enrichedAnswers
                     .filter((a: any) => a.question_id === q.id)
                     .map((a: any) => ({ ...a, respondent_name: r.name })),
                 );
-
                 return (
                   <div
                     key={q.id}
-                    className="bg-slate-900/40 backdrop-blur-sm border border-slate-800/80 shadow-[0_10px_40px_rgba(0,0,0,0.2)] rounded-2xl md:rounded-[32px] p-5 md:p-8 animate-in slide-in-from-bottom-2 duration-500"
+                    className="bg-slate-900/40 backdrop-blur-sm border border-slate-800 p-5 md:p-8 rounded-2xl md:rounded-[32px]"
                   >
-                    <div className="flex items-start gap-4 md:gap-5 mb-5">
-                      <div className="w-8 h-8 md:w-10 md:h-10 shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-lg md:rounded-xl flex items-center justify-center font-black text-sm md:text-base">
+                    <div className="flex items-start gap-4 mb-5">
+                      <div className="w-8 h-8 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-lg flex items-center justify-center font-black text-sm">
                         {idx + 1}
                       </div>
                       <div>
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className="px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 text-[8px] md:text-[9px] font-black uppercase tracking-widest rounded">
-                            {q.type}
-                          </span>
-                          <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 text-[8px] md:text-[9px] font-black uppercase tracking-widest rounded">
-                            {q.answer_type.replace("_", " ")}
-                          </span>
-                        </div>
                         <h3 className="font-bold text-slate-200 text-sm md:text-base leading-relaxed">
                           {q.question_text}
                         </h3>
                       </div>
                     </div>
-
-                    <div className="pl-12 md:pl-[3.75rem]">
-                      <p className="text-[10px] md:text-xs font-black text-slate-500 uppercase tracking-widest mb-3">
-                        Rekap Jawaban ({answersForQ.length} Masuk):
-                      </p>
-
-                      {q.answer_type !== "text" && (
-                        <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
-                          {Array.from(
-                            new Set(
-                              answersForQ.map((a: any) => a.answer_value),
-                            ),
-                          ).map((val: any, i) => {
-                            const count = answersForQ.filter(
-                              (a: any) => a.answer_value === val,
-                            ).length;
-                            return (
-                              <div
-                                key={i}
-                                className="bg-slate-800/50 border border-slate-700 text-slate-300 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm flex items-center gap-3"
-                              >
-                                <span className="font-medium">{val}</span>
-                                <span className="font-black bg-slate-950 px-2 py-0.5 rounded text-blue-400 text-[10px]">
-                                  {count}x
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
+                    <div className="pl-12">
                       <ul className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar border-t border-slate-800/50 pt-3">
                         {answersForQ.map((ans: any, i: number) => (
                           <li
                             key={i}
-                            className="text-xs md:text-sm bg-slate-950/50 p-3 rounded-xl border border-slate-800/80 flex flex-col md:flex-row gap-1 md:gap-2"
+                            className="text-xs bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col sm:flex-row gap-1"
                           >
-                            <span className="font-black text-blue-400 text-[10px] uppercase tracking-wider shrink-0 mt-0.5">
+                            <span className="font-black text-blue-400 text-[10px] uppercase shrink-0">
                               {ans.respondent_name}:
                             </span>
                             <span className="text-slate-300 font-medium">
@@ -700,68 +639,72 @@ export default function ResultDashboard() {
                     </div>
                   </div>
                 );
-              })
-            )}
+              })}
           </div>
         </div>
       )}
 
       {/* ================================================================= */}
-      {/* POPUP DETAIL RESPONDEN (MODAL) */}
+      {/* POPUP DETAIL RESPONDEN (MODAL - DESKTOP LANDSCAPE, MOBILE PORTRAIT SLIM) */}
       {/* ================================================================= */}
       {selectedRespondent && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
           <div
             className="absolute inset-0 bg-black/80 backdrop-blur-md"
             onClick={() => setSelectedRespondent(null)}
           ></div>
 
-          <div className="relative bg-slate-900 border border-slate-800 w-full max-w-5xl h-[85vh] md:h-[75vh] rounded-[32px] shadow-[0_0_80px_rgba(0,0,0,0.8)] flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="w-full md:w-1/3 p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-800 bg-slate-950 flex flex-col justify-between shrink-0">
-              <div>
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-xl md:text-3xl font-black text-white leading-tight">
+          <div className="relative bg-slate-900 border border-slate-800 w-full max-w-5xl h-[90vh] md:h-[75vh] rounded-[24px] md:rounded-[32px] shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* 👇 HEADER DI MOBILE DI-REMAKE: Jauh lebih sempit dan tipis agar ruang log jawaban lega 👇 */}
+            <div className="w-full md:w-1/3 p-4 md:p-8 border-b md:border-b-0 md:border-r border-slate-800 bg-slate-950 flex flex-row md:flex-col justify-between items-center md:items-start shrink-0 gap-3">
+              <div className="flex-1 md:flex-none">
+                <div className="flex justify-between items-center md:items-start mb-1 md:mb-4">
+                  <h2 className="text-base md:text-3xl font-black text-white leading-tight truncate max-w-[180px] md:max-w-none">
                     {selectedRespondent.name}
                   </h2>
-                  <button
-                    onClick={() => setSelectedRespondent(null)}
-                    className="md:hidden w-8 h-8 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-500 transition-colors shrink-0"
-                  >
-                    ✕
-                  </button>
                 </div>
 
-                <div className="flex flex-col gap-2 text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">
-                  <span className="bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg w-fit">
+                {/* Badge Identitas Flex-row kecil di HP, Stack vertical di desktop */}
+                <div className="flex flex-wrap md:flex-col gap-1 md:gap-2 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <span className="bg-slate-800/80 px-2 py-0.5 md:py-1 rounded md:w-fit">
                     {selectedRespondent.gender}
                   </span>
-                  <span className="bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg w-fit">
+                  <span className="bg-slate-800/80 px-2 py-0.5 md:py-1 rounded md:w-fit">
                     {selectedRespondent.age} Thn
                   </span>
-                  <span className="bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg w-fit">
+                  <span className="bg-slate-800/80 px-2 py-0.5 md:py-1 rounded md:w-fit truncate max-w-[90px] md:max-w-none">
                     {selectedRespondent.last_education}
                   </span>
-                  <span className="bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg text-blue-400 w-fit">
-                    Durasi:{" "}
-                    {formatDuration(selectedRespondent.duration_seconds)}
+                  <span className="bg-blue-950/50 text-blue-400 px-2 py-0.5 md:py-1 rounded md:w-fit">
+                    ⏱ {formatDuration(selectedRespondent.duration_seconds)}
                   </span>
                 </div>
               </div>
 
-              <button
-                onClick={() => setSelectedRespondent(null)}
-                className="hidden md:flex w-full mt-8 bg-slate-800 border border-slate-700 py-3 rounded-xl items-center justify-center text-slate-400 hover:text-white hover:bg-blue-500 transition-colors uppercase font-black tracking-widest text-xs"
-              >
-                Tutup Jendela
-              </button>
+              {/* Tombol Tutup - Fleksibel antara Pojok HP vs Bawah Layar Desktop */}
+              <div className="shrink-0 flex items-center">
+                <button
+                  onClick={() => setSelectedRespondent(null)}
+                  className="md:hidden w-8 h-8 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-slate-400 font-bold active:bg-red-600 active:text-white"
+                >
+                  ✕
+                </button>
+                <button
+                  onClick={() => setSelectedRespondent(null)}
+                  className="hidden md:flex w-full bg-slate-800 border border-slate-700 py-3 rounded-xl items-center justify-center text-slate-400 hover:text-white hover:bg-red-500 transition-colors uppercase font-black tracking-widest text-xs"
+                >
+                  Tutup Jendela
+                </button>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 md:p-8 bg-slate-900/50 space-y-4 md:space-y-6 custom-scrollbar">
-              <h3 className="font-black text-slate-500 uppercase tracking-widest text-[10px] md:text-xs mb-2">
-                Log Rekaman Jawaban
+            {/* Area Log Jawaban - Sekarang mendapatkan porsi ruang jauh lebih besar di layar HP */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-900/50 space-y-3 md:space-y-4 custom-scrollbar">
+              <h3 className="font-black text-slate-500 uppercase tracking-widest text-[9px] md:text-xs border-b border-slate-800 pb-2">
+                Log Rekaman Jawaban Partisipan
               </h3>
               {selectedRespondent.enrichedAnswers.length === 0 ? (
-                <p className="text-slate-500 italic text-sm">
+                <p className="text-slate-500 italic text-xs">
                   Belum ada jawaban tersimpan.
                 </p>
               ) : (
@@ -769,18 +712,18 @@ export default function ResultDashboard() {
                   (ans: any, idx: number) => (
                     <div
                       key={idx}
-                      className="bg-slate-950/50 border border-slate-800/80 p-4 md:p-5 rounded-2xl"
+                      className="bg-slate-950/40 border border-slate-800/60 p-3 md:p-5 rounded-xl md:rounded-2xl"
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
                           {ans.question?.type || "Unknown"}
                         </span>
                       </div>
-                      <p className="font-bold text-slate-300 text-xs md:text-sm mb-3 md:mb-4 leading-relaxed">
+                      <p className="font-bold text-slate-300 text-xs md:text-sm mb-2 md:mb-3 leading-relaxed">
                         {ans.question?.question_text ||
                           "Soal telah dihapus dari database"}
                       </p>
-                      <div className="bg-slate-900 border border-slate-700 p-3 md:p-4 rounded-xl text-xs md:text-sm text-slate-400 font-medium">
+                      <div className="bg-slate-900 border border-slate-800/80 p-2.5 md:p-3.5 rounded-lg text-xs text-slate-400 font-medium">
                         Menjawab:{" "}
                         <span className="text-blue-400 font-bold ml-1">
                           {ans.answer_value}
@@ -795,60 +738,38 @@ export default function ResultDashboard() {
         </div>
       )}
 
-      {/* ================================================================= */}
-      {/* POPUP KONFIRMASI HAPUS (DANGER ZONE MODAL) */}
-      {/* ================================================================= */}
+      {/* POPUP KONFIRMASI HAPUS */}
       {deleteTarget && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/80 backdrop-blur-md"
             onClick={() => !isDeleting && setDeleteTarget(null)}
           ></div>
-
-          <div className="relative bg-slate-900 border border-red-500/30 w-full max-w-md rounded-[32px] shadow-[0_0_80px_rgba(220,38,38,0.4)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 p-8 text-center">
-            <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5 border border-red-500/30 shadow-inner">
-              <svg
-                className="w-8 h-8"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.5}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            </div>
-
-            <h2 className="text-xl font-black text-white mb-2 uppercase tracking-widest">
+          <div className="relative bg-slate-900 border border-red-500/30 w-full max-w-md rounded-[24px] shadow-2xl p-6 text-center animate-in zoom-in-95">
+            <h2 className="text-lg font-black text-white mb-2 uppercase tracking-widest">
               Hapus Permanen?
             </h2>
-
-            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+            <p className="text-slate-400 text-xs mb-6 leading-relaxed">
               {deleteTarget.type === "mass"
-                ? `Anda akan menghapus ${deleteTarget.ids.length} data responden secara massal.`
-                : `Anda akan menghapus data responden ${deleteTarget.name}.`}
+                ? `Hapus ${deleteTarget.ids.length} data responden secara massal.`
+                : `Hapus data responden ${deleteTarget.name}.`}
               <br />
-              <br />
-              Seluruh rekaman jawaban akan ikut dimusnahkan. Lanjutkan?
+              Seluruh data tidak dapat dikembalikan. Lanjutkan?
             </p>
-
             <div className="flex gap-3">
               <button
                 disabled={isDeleting}
                 onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-3.5 bg-slate-800 border border-slate-700 text-slate-300 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-700 transition-colors"
+                className="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold uppercase text-[10px]"
               >
                 Batal
               </button>
               <button
                 disabled={isDeleting}
                 onClick={executeDelete}
-                className="flex-1 py-3.5 bg-red-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-red-500 active:scale-95 transition-all shadow-[0_0_20px_rgba(220,38,38,0.4)]"
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold uppercase text-[10px] hover:bg-red-500"
               >
-                {isDeleting ? "Menghapus..." : "Ya, Musnahkan"}
+                {isDeleting ? "Menghapus..." : "Ya, Hapus"}
               </button>
             </div>
           </div>
