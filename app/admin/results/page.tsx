@@ -2,6 +2,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+// Injeksi CDN SheetJS resmi dari cdnjs agar menghasilkan biner (.xlsx) murni tanpa install npm
+const XLSX_CDN =
+  "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+
 export default function ResultDashboard() {
   const [activeTab, setActiveTab] = useState<"individu" | "soal">("individu");
   const [activeQuestionTab, setActiveQuestionTab] = useState("politik");
@@ -30,6 +34,13 @@ export default function ResultDashboard() {
 
   useEffect(() => {
     fetchData();
+    // Load SheetJS engine ke dalam DOM secara otomatis
+    if (typeof window !== "undefined" && !(window as any).XLSX) {
+      const script = document.createElement("script");
+      script.src = XLSX_CDN;
+      script.async = true;
+      document.body.appendChild(script);
+    }
   }, []);
 
   async function fetchData() {
@@ -135,20 +146,18 @@ export default function ResultDashboard() {
     }
   };
 
-  // 🔥 FITUR UTAMA BARU: Export ke Berkas .xlsx dengan Office OpenXML Format (Anti-Corrupt)
+  // 🔥 SOLUSI TOTAL: Bikin Berkas .XLSX Murni Menggunakan SheetJS Engine (Anti-Gagal)
   const exportToExcelMultiSheets = () => {
+    const XLSX = (window as any).XLSX;
+    if (!XLSX) {
+      alert("Engine Excel sedang dimuat, mohon coba sesaat lagi.");
+      return;
+    }
+
     if (respondents.length === 0 || questions.length === 0) {
       alert("Belum ada data untuk di-export.");
       return;
     }
-
-    const cleanString = (str: any) => {
-      if (str === null || str === undefined) return "";
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-    };
 
     const typeOrder = ["politik", "industri", "skala", "suspicion"];
 
@@ -160,7 +169,10 @@ export default function ResultDashboard() {
       return type.toUpperCase();
     };
 
-    const getSheetData = (dataset: any[], allowedQuestionTypes: string[]) => {
+    const generateSheetMatrix = (
+      dataset: any[],
+      allowedQuestionTypes: string[],
+    ) => {
       const filteredQuestions = questions
         .filter((q) => allowedQuestionTypes.includes(q.type))
         .sort((a, b) => typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type));
@@ -179,51 +191,33 @@ export default function ResultDashboard() {
         "Waktu Masuk",
       ];
 
-      // Susun Struktur Gabung Cell (Merge) Atas
-      const groupedHeaders = [
-        { label: "DATA RESPONDEN", span: baseHeaders.length },
-      ];
-      let currentType = "";
-      let currentTypeCount = 0;
-
+      // Baris 1: Tipe / Kategori Soal
+      const row1 = [...baseHeaders.map(() => "DATA RESPONDEN")];
       filteredQuestions.forEach((q) => {
-        if (q.type !== currentType) {
-          if (currentType !== "") {
-            groupedHeaders.push({
-              label: getLabel(currentType),
-              span: currentTypeCount,
-            });
-          }
-          currentType = q.type;
-          currentTypeCount = 1;
-        } else {
-          currentTypeCount++;
-        }
+        row1.push(getLabel(q.type));
       });
-      if (currentTypeCount > 0) {
-        groupedHeaders.push({
-          label: getLabel(currentType),
-          span: currentTypeCount,
-        });
-      }
 
-      const headers2 = [
+      // Baris 2: Detail Soal / Nama Kolom
+      const row2 = [
         ...baseHeaders,
         ...filteredQuestions.map((q) => q.question_text),
       ];
 
-      const rows = dataset.map((r) => {
+      // Gabungkan Baris Konten
+      const matrixData = [row1, row2];
+
+      dataset.forEach((r) => {
         const row = [
           r.id,
           r.name,
-          r.age,
+          Number(r.age) || r.age,
           r.gender,
           r.domicile,
           r.last_education,
           r.phone || "-",
           r.assignedType,
           `${r.correctCount} / ${r.mcTotal}`,
-          r.duration_seconds,
+          Number(r.duration_seconds) || r.duration_seconds,
           new Date(r.created_at).toLocaleString("id-ID"),
         ];
 
@@ -233,123 +227,91 @@ export default function ResultDashboard() {
           );
           row.push(ansObj ? ansObj.answer_value : "-");
         });
-        return row;
+        matrixData.push(row);
       });
 
-      return { groupedHeaders, headers2, rows, colCount: headers2.length };
+      return {
+        matrixData,
+        filteredQuestionsCount: filteredQuestions.length,
+        baseCount: baseHeaders.length,
+      };
     };
 
-    const sheetKeseluruhan = getSheetData(respondents, [
+    // 1. Ambil data matriks untuk tiap-tiap lembar tab kerja
+    const dataAll = generateSheetMatrix(respondents, [
       "politik",
       "industri",
       "skala",
       "suspicion",
     ]);
-    const sheetPolitik = getSheetData(
+    const dataPol = generateSheetMatrix(
       respondents.filter((r) => r.assignedType === "politik"),
       ["politik", "skala", "suspicion"],
     );
-    const sheetIndustri = getSheetData(
+    const dataInd = generateSheetMatrix(
       respondents.filter((r) => r.assignedType === "industri"),
       ["industri", "skala", "suspicion"],
     );
 
-    // Membangun dokumen berbasis XML OpenXML Worksheet Schema
-    const buildWorksheetXml = (sheetName: string, data: any) => {
-      let xml = `  <Worksheet ss:Name="${sheetName}">\n    <Table>\n`;
-      for (let i = 0; i < data.colCount; i++) {
-        xml += `      <Column ss:Width="${i < 11 ? "110" : "240"}" />\n`;
+    // 2. Inisialisasi Dokumen Workbook SheetJS baru
+    const wb = XLSX.utils.book_new();
+
+    const appendSheet = (sheetName: string, sheetInfo: any) => {
+      const ws = XLSX.utils.aoa_to_sheet(sheetInfo.matrixData);
+
+      // Logika Gabung Cell (Merge) Baris 1 agar rapi otomatis
+      const merges = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: sheetInfo.baseCount - 1 } },
+      ];
+      let currentColIdx = sheetInfo.baseCount;
+
+      const allowedTypes =
+        sheetName === "Kelompok Politik"
+          ? ["politik", "skala", "suspicion"]
+          : sheetName === "Kelompok Industri"
+            ? ["industri", "skala", "suspicion"]
+            : ["politik", "industri", "skala", "suspicion"];
+
+      const filteredQuestions = questions
+        .filter((q) => allowedTypes.includes(q.type))
+        .sort((a, b) => typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type));
+
+      let currentType = "";
+      let startIdx = currentColIdx;
+
+      filteredQuestions.forEach((q, idx) => {
+        if (q.type !== currentType) {
+          if (currentType !== "") {
+            merges.push({
+              s: { r: 0, c: startIdx },
+              e: { r: 0, c: currentColIdx - 1 },
+            });
+          }
+          currentType = q.type;
+          startIdx = currentColIdx;
+        }
+        currentColIdx++;
+      });
+      if (currentColIdx > startIdx) {
+        merges.push({
+          s: { r: 0, c: startIdx },
+          e: { r: 0, c: currentColIdx - 1 },
+        });
       }
 
-      // Baris 1: Pengelompokan Tipe Kuesioner (Dengan Fitur Gabung Cell / MergeAcross)
-      xml += '      <Row ss:Height="26">\n';
-      data.groupedHeaders.forEach((gh: any) => {
-        const mergeAttr = gh.span > 1 ? ` ss:MergeAcross="${gh.span - 1}"` : "";
-        xml += `        <Cell${mergeAttr} ss:StyleID="HeaderType"><Data ss:Type="String">${cleanString(gh.label)}</Data></Cell>\n`;
-      });
-      xml += "      </Row>\n";
-
-      // Baris 2: Judul / Butir Pertanyaan
-      xml += '      <Row ss:Height="42">\n';
-      data.headers2.forEach((h: string) => {
-        xml += `        <Cell ss:StyleID="HeaderQuestion"><Data ss:Type="String">${cleanString(h)}</Data></Cell>\n`;
-      });
-      xml += "      </Row>\n";
-
-      // Baris Konten Data Utama
-      data.rows.forEach((row: any[]) => {
-        xml += '      <Row ss:Height="20">\n';
-        row.forEach((cell: any) => {
-          const isNum = typeof cell === "number";
-          xml += `        <Cell ss:StyleID="DataCell"><Data ss:Type="${isNum ? "Number" : "String"}">${cleanString(cell)}</Data></Cell>\n`;
-        });
-        xml += "      </Row>\n";
-      });
-
-      xml += "    </Table>\n  </Worksheet>\n";
-      return xml;
+      ws["!merges"] = merges;
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
     };
 
-    let xlsxTemplate = `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="workbook.xsl"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:html="http://www.w3.org/TR/REC-html40">
-  <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
-    <Author>Admin IBW</Author>
-    <Created>${new Date().toISOString()}</Created>
-  </DocumentProperties>
-  <Styles>
-    <Style ss:ID="HeaderType">
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-      <Font ss:Bold="1" ss:Color="#FFFFFF" ss:Name="Segoe UI" ss:Size="10"/>
-      <Interior ss:Color="#1E293B" ss:Pattern="Solid"/>
-    </Style>
-    <Style ss:ID="HeaderQuestion">
-      <Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/>
-      <Font ss:Bold="1" ss:Color="#0F172A" ss:Name="Segoe UI" ss:Size="10"/>
-      <Interior ss:Color="#EFF6FF" ss:Pattern="Solid"/>
-      <Borders>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/>
-      </Borders>
-    </Style>
-    <Style ss:ID="DataCell">
-      <Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/>
-      <Font ss:Name="Segoe UI" ss:Size="9" ss:Color="#334155"/>
-      <Borders>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#F1F5F9"/>
-        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#F1F5F9"/>
-        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#F1F5F9"/>
-        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#F1F5F9"/>
-      </Borders>
-    </Style>
-  </Styles>
-`;
+    appendSheet("Keseluruhan", dataAll);
+    appendSheet("Kelompok Politik", dataPol);
+    appendSheet("Kelompok Industri", dataInd);
 
-    xlsxTemplate += buildWorksheetXml("Keseluruhan", sheetKeseluruhan);
-    xlsxTemplate += buildWorksheetXml("Kelompok Politik", sheetPolitik);
-    xlsxTemplate += buildWorksheetXml("Kelompok Industri", sheetIndustri);
-    xlsxTemplate += "</Workbook>";
-
-    // Set MIME-Type resmi untuk Excel OpenXML Spreadsheet (.xlsx)
-    const blob = new Blob([xlsxTemplate], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute(
-      "download",
+    // 3. Konversi menjadi berkas biner .xlsx asli (Aman dari Security Block Microsoft)
+    XLSX.writeFile(
+      wb,
       `Rekap_Eksperimen_Skripsi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`,
     );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const formatDuration = (seconds: number) => {
@@ -644,48 +606,38 @@ export default function ResultDashboard() {
         </div>
       )}
 
-      {/* ================================================================= */}
-      {/* POPUP DETAIL RESPONDEN (MODAL - DESKTOP LANDSCAPE, MOBILE PORTRAIT SLIM) */}
-      {/* ================================================================= */}
+      {/* POPUP DETAIL RESPONDEN */}
       {selectedRespondent && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
           <div
             className="absolute inset-0 bg-black/80 backdrop-blur-md"
             onClick={() => setSelectedRespondent(null)}
           ></div>
-
           <div className="relative bg-slate-900 border border-slate-800 w-full max-w-5xl h-[90vh] md:h-[75vh] rounded-[24px] md:rounded-[32px] shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* 👇 HEADER DI MOBILE DI-REMAKE: Jauh lebih sempit dan tipis agar ruang log jawaban lega 👇 */}
             <div className="w-full md:w-1/3 p-4 md:p-8 border-b md:border-b-0 md:border-r border-slate-800 bg-slate-950 flex flex-row md:flex-col justify-between items-center md:items-start shrink-0 gap-3">
               <div className="flex-1 md:flex-none">
-                <div className="flex justify-between items-center md:items-start mb-1 md:mb-4">
-                  <h2 className="text-base md:text-3xl font-black text-white leading-tight truncate max-w-[180px] md:max-w-none">
-                    {selectedRespondent.name}
-                  </h2>
-                </div>
-
-                {/* Badge Identitas Flex-row kecil di HP, Stack vertical di desktop */}
-                <div className="flex flex-wrap md:flex-col gap-1 md:gap-2 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  <span className="bg-slate-800/80 px-2 py-0.5 md:py-1 rounded md:w-fit">
+                <h2 className="text-base md:text-3xl font-black text-white leading-tight truncate max-w-[180px] md:max-w-none">
+                  {selectedRespondent.name}
+                </h2>
+                <div className="flex flex-wrap md:flex-col gap-1 md:gap-2 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                  <span className="bg-slate-800/80 px-2 py-0.5 rounded md:w-fit">
                     {selectedRespondent.gender}
                   </span>
-                  <span className="bg-slate-800/80 px-2 py-0.5 md:py-1 rounded md:w-fit">
+                  <span className="bg-slate-800/80 px-2 py-0.5 rounded md:w-fit">
                     {selectedRespondent.age} Thn
                   </span>
-                  <span className="bg-slate-800/80 px-2 py-0.5 md:py-1 rounded md:w-fit truncate max-w-[90px] md:max-w-none">
+                  <span className="bg-slate-800/80 px-2 py-0.5 rounded md:w-fit truncate max-w-[90px] md:max-w-none">
                     {selectedRespondent.last_education}
                   </span>
-                  <span className="bg-blue-950/50 text-blue-400 px-2 py-0.5 md:py-1 rounded md:w-fit">
+                  <span className="bg-blue-950/50 text-blue-400 px-2 py-0.5 rounded md:w-fit">
                     ⏱ {formatDuration(selectedRespondent.duration_seconds)}
                   </span>
                 </div>
               </div>
-
-              {/* Tombol Tutup - Fleksibel antara Pojok HP vs Bawah Layar Desktop */}
               <div className="shrink-0 flex items-center">
                 <button
                   onClick={() => setSelectedRespondent(null)}
-                  className="md:hidden w-8 h-8 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-slate-400 font-bold active:bg-red-600 active:text-white"
+                  className="md:hidden w-8 h-8 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-slate-400 font-bold"
                 >
                   ✕
                 </button>
@@ -698,7 +650,6 @@ export default function ResultDashboard() {
               </div>
             </div>
 
-            {/* Area Log Jawaban - Sekarang mendapatkan porsi ruang jauh lebih besar di layar HP */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-900/50 space-y-3 md:space-y-4 custom-scrollbar">
               <h3 className="font-black text-slate-500 uppercase tracking-widest text-[9px] md:text-xs border-b border-slate-800 pb-2">
                 Log Rekaman Jawaban Partisipan
@@ -714,16 +665,14 @@ export default function ResultDashboard() {
                       key={idx}
                       className="bg-slate-950/40 border border-slate-800/60 p-3 md:p-5 rounded-xl md:rounded-2xl"
                     >
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
-                          {ans.question?.type || "Unknown"}
-                        </span>
-                      </div>
-                      <p className="font-bold text-slate-300 text-xs md:text-sm mb-2 md:mb-3 leading-relaxed">
+                      <span className="text-[7px] md:text-[8px] font-black uppercase text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
+                        {ans.question?.type || "Unknown"}
+                      </span>
+                      <p className="font-bold text-slate-300 text-xs md:text-sm my-2 leading-relaxed">
                         {ans.question?.question_text ||
                           "Soal telah dihapus dari database"}
                       </p>
-                      <div className="bg-slate-900 border border-slate-800/80 p-2.5 md:p-3.5 rounded-lg text-xs text-slate-400 font-medium">
+                      <div className="bg-slate-900 border border-slate-800/80 p-2.5 rounded-lg text-xs text-slate-400 font-medium">
                         Menjawab:{" "}
                         <span className="text-blue-400 font-bold ml-1">
                           {ans.answer_value}
