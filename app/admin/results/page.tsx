@@ -162,9 +162,9 @@ export default function ResultDashboard() {
     const typeOrder = ["politik", "industri", "skala", "suspicion"];
 
     const getLabel = (type: string) => {
-      if (type === "politik") return "MC KEL. POLITIK";
-      if (type === "industri") return "MC KEL. INDUSTRI";
-      if (type === "skala") return "KUESIONER / SKALA";
+      if (type === "politik") return "MC KE";
+      if (type === "industri") return "MC KK";
+      if (type === "skala") return "KUESIONER";
       if (type === "suspicion") return "SUSPICION CHECK";
       return type.toUpperCase();
     };
@@ -268,7 +268,7 @@ export default function ResultDashboard() {
       const allowedTypes =
         sheetName === "Kelompok Politik"
           ? ["politik", "skala", "suspicion"]
-          : sheetName === "Kelompok Industri"
+          : sheetName === "Kelompok Ekonomi"
             ? ["industri", "skala", "suspicion"]
             : ["politik", "industri", "skala", "suspicion"];
 
@@ -305,7 +305,7 @@ export default function ResultDashboard() {
 
     appendSheet("Keseluruhan", dataAll);
     appendSheet("Kelompok Politik", dataPol);
-    appendSheet("Kelompok Industri", dataInd);
+    appendSheet("Kelompok Ekonomi", dataInd);
 
     // 3. Konversi menjadi berkas biner .xlsx asli (Aman dari Security Block Microsoft)
     XLSX.writeFile(
